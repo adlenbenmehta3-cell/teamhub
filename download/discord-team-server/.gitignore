@@ -1,0 +1,21 @@
+# Bot token — never commit
+config.json
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+.env
+.venv
+
+# Data files (contain team member data — sensitive)
+data/
+bot.log
+
+# OS files
+.DS_Store
+Thumbs.db

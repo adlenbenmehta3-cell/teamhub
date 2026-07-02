@@ -1,0 +1,43 @@
+{
+  "token": "PUT_YOUR_BOT_TOKEN_HERE",
+  "guild_id": 0,
+  "channels": {
+    "announcements": 0,
+    "check_in": 0,
+    "attendance_logs": 0,
+    "task_assignments": 0,
+    "task_progress": 0,
+    "completed_tasks": 0,
+    "daily_reports": 0,
+    "weekly_summary": 0,
+    "leaderboard": 0,
+    "kudos": 0,
+    "meeting_notes": 0,
+    "knowledge_base": 0
+  },
+  "roles": {
+    "team_leader": 0,
+    "senior_marketer": 0,
+    "marketing_specialist": 0,
+    "junior_marketer": 0,
+    "guest": 0
+  },
+  "schedule": {
+    "morning_reminder": "09:00",
+    "check_in_deadline": "10:00",
+    "report_reminder": "17:00",
+    "report_deadline": "18:00",
+    "weekly_summary_day": "fri",
+    "weekly_summary_time": "16:00",
+    "timezone": "Africa/Algiers"
+  },
+  "points": {
+    "on_time_checkin": 2,
+    "late_checkin": 1,
+    "task_completed": 5,
+    "task_completed_early": 7,
+    "daily_report_submitted": 3,
+    "kudos_received": 2,
+    "meeting_attended": 4
+  }
+}
