@@ -15,9 +15,17 @@ A custom Discord bot designed for **marketing team leaders** to manage daily tas
 
 ---
 
-## Quick Start (5 Steps)
+## Quick Start (5 Steps) — FULLY AUTOMATED
 
-### Step 1 — Create the Bot on Discord
+> **NEW**: Use `auto_setup.py` to create ALL categories, channels, and roles in ONE run!
+
+### Step 1 — Create an EMPTY Discord Server
+
+1. In Discord, click the **+** next to a server name to create a server
+2. Choose **"Create My Own"** → name it (e.g., `Marketing Team HQ`) → Create
+3. The server is now empty — the auto-setup script will fill it
+
+### Step 2 — Create the Bot on Discord
 
 1. Go to <https://discord.com/developers/applications>
 2. Click **"New Application"** → name it (e.g., `Marketing Team Bot`) → Create
@@ -27,56 +35,53 @@ A custom Discord bot designed for **marketing team leaders** to manage daily tas
    - ✅ Message Content Intent
 5. Copy the **bot token** (click "Reset Token" if you don't see it)
 
-### Step 2 — Invite the Bot to Your Server
+### Step 3 — Invite the Bot to Your Server (with ADMIN permission)
 
-1. In the Developer Portal, go to **OAuth2 → URL Generator**
-2. Select scopes: `bot` and `applications.commands`
-3. Select permissions:
-   - Manage Roles
-   - Read Messages/View Channels
-   - Send Messages
-   - Embed Links
-   - Read Message History
-   - Mention Everyone
-   - Add Reactions
-   - Use Slash Commands
-4. Copy the generated URL and open it in your browser
-5. Select your server → Authorize
+**Easiest method**: In Developer Portal → Bot → scroll down → **OAuth2 URL Generator**:
+1. Scopes: check `bot` and `applications.commands`
+2. Permissions: check **Administrator** (top of the list)
+3. Copy the generated URL → open in browser → select your server → Authorize
 
-### Step 3 — Install Python Dependencies
+### Step 4 — Install Python & Configure
 
 ```bash
-# Requires Python 3.10 or newer
+# Install Python 3.10+ from python.org if not already installed
+
+# Create virtual environment
 python -m venv venv
 source venv/bin/activate     # on Windows: venv\Scripts\activate
+
+# Install dependencies
 pip install -r requirements.txt
 ```
 
-### Step 4 — Configure the Bot
+Now edit `config.json`:
+1. Set `"token"` to your bot token
+2. Set `"guild_id"` to your server ID
+   - Enable Developer Mode: Discord Settings → Advanced → Developer Mode
+   - Right-click your server name → Copy ID → paste as the number
 
-1. Open `config.json` in a text editor
-2. Set `"token"` to your bot token (or set `DISCORD_TOKEN` env variable)
-3. Set `"guild_id"` to your server ID (right-click server name in Discord → Copy ID — enable Developer Mode in Discord Settings → Advanced first)
-4. Fill in the `"channels"` section with channel IDs from your server
-5. Fill in the `"roles"` section with role IDs from your server
-6. Adjust `"schedule"` times to match your team's working hours
-7. (Optional) Tweak the `"points"` values for your gamification preferences
-
-**To get channel/role IDs:** right-click any channel or role in Discord → "Copy ID"
-
-### Step 5 — Run the Bot
+### Step 5 — Run the Auto-Setup Script!
 
 ```bash
+python auto_setup.py
+```
+
+The script will:
+- ✅ Create 5 roles (Team Leader, Senior Marketer, Specialist, Junior, Guest)
+- ✅ Create 9 categories with all their channels (text + voice)
+- ✅ Set channel topics and permission overrides
+- ✅ Update `config.json` automatically with all channel/role IDs
+- ✅ Post a welcome message in #announcements
+
+After it finishes:
+
+```bash
+# Start the main bot
 python bot.py
 ```
 
-You should see:
-```
-2026-07-03 09:00:00 | INFO     | team-bot | Logged in as Marketing Team Bot#1234
-2026-07-03 09:00:00 | INFO     | team-bot | Synced 16 slash commands to guild 123456789
-```
-
-Type `/` in any channel of your server to see all available commands!
+That's it! Type `/` in any channel to see all 16 slash commands.
 
 ---
 
@@ -198,8 +203,10 @@ Create these categories and channels in your Discord server, then put their IDs 
 
 ```
 discord-team-server/
-├── bot.py              # Main bot file (all commands and logic)
+├── bot.py              # Main bot file (all 16 commands and logic)
+├── auto_setup.py       # ⭐ Auto-creates the entire server in one run
 ├── config.json         # Bot configuration (token, channel IDs, schedule)
+├── config.example.json # Template (safe to share)
 ├── requirements.txt    # Python dependencies
 ├── README.md           # This file
 ├── .gitignore          # Ignores data/, venv/, etc.
