@@ -127,8 +127,9 @@ export async function ensureSchemaUpToDate() {
   if (globalForPrisma.schemaMigrated) return;
 
   try {
-    // Try a query that requires the latest schema (recurringTask table)
-    await db.recurringTask.count();
+    // Try a query that requires the latest schema (workPlan table)
+    // This is the most recently added table
+    await db.workPlan.count();
     globalForPrisma.schemaMigrated = true;
   } catch (e) {
     // Schema is outdated — run prisma db push
