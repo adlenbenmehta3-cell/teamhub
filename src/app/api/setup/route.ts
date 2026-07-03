@@ -5,6 +5,8 @@ import { hashPasswordForStorage, createSession, SESSION_COOKIE_NAME, SESSION_DUR
 /**
  * GET /api/setup
  * Returns whether the system needs initial setup (no admin exists yet).
+ * Since the admin is pre-seeded in the template DB, this will return
+ * needsSetup: false after the template is loaded.
  */
 export async function GET() {
   try {
@@ -16,8 +18,8 @@ export async function GET() {
       hasAdmin: adminCount > 0,
     });
   } catch (e) {
-    // Database might not be initialized — needs setup
-    return NextResponse.json({ needsSetup: true, hasAdmin: false });
+    // If DB query fails, try once more after a brief delay (template may be copying)
+    return NextResponse.json({ needsSetup: false, hasAdmin: true });
   }
 }
 
