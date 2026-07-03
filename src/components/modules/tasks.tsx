@@ -302,8 +302,13 @@ export function TasksModule({ user }: Props) {
     }
   };
 
-  const handleDeleteTask = async (taskId: string, taskTitle: string) => {
-    if (!confirm(t("tasks.deleteConfirm", { title: taskTitle }))) return;
+  const handleDeleteTask = async (taskId: string, taskTitle: string, isRecurring: boolean) => {
+    const msg = isRecurring
+      ? (lang === "ar"
+          ? `حذف "${taskTitle}"؟ سيتم حذف كل النسخ المستقبلية أيضاً ولن تتكرر بعد اليوم.`
+          : `Delete "${taskTitle}"? All future instances will also be deleted and won't recur.`)
+      : t("tasks.deleteConfirm", { title: taskTitle });
+    if (!confirm(msg)) return;
     try {
       const res = await fetch(`/api/tasks/${taskId}`, { method: "DELETE" });
       if (!res.ok) {
@@ -312,6 +317,7 @@ export function TasksModule({ user }: Props) {
       }
       toast.success(t("tasks.deleted"));
       loadTasks();
+      loadRecurringTasks();
     } catch {
       toast.error(t("tasks.deleteFailed"));
     }
@@ -619,7 +625,7 @@ export function TasksModule({ user }: Props) {
                                 size="sm"
                                 variant="outline"
                                 className="h-8 px-2 border-destructive/30 text-destructive hover:bg-destructive/5"
-                                onClick={() => handleDeleteTask(task.id, task.title)}
+                                onClick={() => handleDeleteTask(task.id, task.title, !!task.recurringTaskId)}
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
                               </Button>

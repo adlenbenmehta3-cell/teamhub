@@ -171,7 +171,38 @@ export async function DELETE(
     }
 
     const { id } = await params;
-    await db.task.delete({ where: { id } });
+    
+    // Get the task first to check if it's recurring
+    const task = await db.task.findUnique({ where: { id } });
+    if (!task) {
+      return NextResponse.json(
+        { error: "المهمة غير موجودة" },
+        { status: 404 }
+      );
+    }
+    
+    // If it's a recurring task instance, also delete ALL future instances
+    // and deactivate the recurring task template to prevent regeneration
+    if (task.recurringTaskId) {
+      // Delete all future uncompleted instances of this recurring task
+      await db.task.deleteMany({
+        where: {
+          recurringTaskId: task.recurringTaskId,
+          status: "OPEN",
+          deadline: { gte: task.deadline },
+        },
+      });
+      
+      // Deactivate the recurring task template
+      await db.recurringTask.update({
+        where: { id: task.recurringTaskId },
+        data: { active: false },
+      });
+    } else {
+      // Regular task — just delete it
+      await db.task.delete({ where: { id } });
+    }
+    
     return NextResponse.json({ success: true });
   } catch (e) {
     console.error("Task DELETE error:", e);
