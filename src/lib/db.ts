@@ -6,48 +6,99 @@ const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
 };
 
-// On Vercel serverless, /tmp is writable but ephemeral (resets on cold start)
-// Strategy: bundle a pre-built empty SQLite file, copy it to /tmp on cold start
-// For local dev, use the local db file directly
+/**
+ * Database path strategy:
+ *
+ * - Railway (production): /data/teamhub.db
+ *   Railway provides a persistent volume mounted at /data.
+ *   Data survives across restarts and deployments.
+ *
+ * - Vercel (legacy): /tmp/teamhub.db
+ *   Vercel serverless uses /tmp which is ephemeral.
+ *   We copy the template (with pre-seeded admin) on each cold start.
+ *   Data does NOT persist reliably.
+ *
+ * - Local dev: ./db/custom.db
+ *   Standard SQLite file on disk.
+ */
 
+const IS_RAILWAY = !!process.env.RAILWAY_ENVIRONMENT || !!process.env.RAILWAY_VOLUME_NAME;
 const IS_VERCEL = !!process.env.VERCEL;
-const TMP_DB_PATH = "/tmp/teamhub.db";
+
+const RAILWAY_DB_PATH = "/data/teamhub.db";
+const VERCEL_TMP_DB_PATH = "/tmp/teamhub.db";
 
 function getDbUrl(): string {
-  if (IS_VERCEL) {
-    // Check if /tmp/teamhub.db exists, if not, copy from bundled template
-    if (!existsSync(TMP_DB_PATH)) {
-      try {
-        // Ensure /tmp exists
-        if (!existsSync("/tmp")) {
-          mkdirSync("/tmp", { recursive: true });
-        }
-        // Try to copy from bundled empty db template
-        // The template is at node_modules/teamhub-empty.db or similar
-        const templatePaths = [
-          path.join(process.cwd(), "db", "teamhub-empty.db"),
-          path.join(process.cwd(), "prisma", "teamhub-empty.db"),
-          "/var/task/db/teamhub-empty.db",
-        ];
-        for (const templatePath of templatePaths) {
-          if (existsSync(templatePath)) {
-            try {
-              copyFileSync(templatePath, TMP_DB_PATH);
-              console.log(`[DB] Copied template from ${templatePath} to ${TMP_DB_PATH}`);
-              break;
-            } catch (e) {
-              console.error(`[DB] Failed to copy from ${templatePath}:`, e);
-            }
-          }
-        }
-      } catch (e) {
-        console.error("[DB] Init failed:", e);
-      }
-    }
-    return `file:${TMP_DB_PATH}`;
+  // Railway: use persistent /data volume
+  if (IS_RAILWAY) {
+    ensureRailwayDb();
+    return `file:${RAILWAY_DB_PATH}`;
   }
+
+  // Vercel: copy template to /tmp on cold start (ephemeral)
+  if (IS_VERCEL) {
+    if (!existsSync(VERCEL_TMP_DB_PATH)) {
+      copyVercelTemplate();
+    }
+    return `file:${VERCEL_TMP_DB_PATH}`;
+  }
+
   // Local dev
   return process.env.DATABASE_URL || "file:./db/custom.db";
+}
+
+function ensureRailwayDb() {
+  try {
+    // Ensure /data directory exists
+    if (!existsSync("/data")) {
+      mkdirSync("/data", { recursive: true });
+    }
+    // If DB doesn't exist yet, copy from template (includes pre-seeded admin)
+    if (!existsSync(RAILWAY_DB_PATH)) {
+      const templatePaths = [
+        path.join(process.cwd(), "db", "teamhub-empty.db"),
+        "/app/db/teamhub-empty.db",
+      ];
+      for (const templatePath of templatePaths) {
+        if (existsSync(templatePath)) {
+          try {
+            copyFileSync(templatePath, RAILWAY_DB_PATH);
+            console.log(`[DB] Copied template from ${templatePath} to ${RAILWAY_DB_PATH}`);
+            break;
+          } catch (e) {
+            console.error(`[DB] Failed to copy from ${templatePath}:`, e);
+          }
+        }
+      }
+    }
+  } catch (e) {
+    console.error("[DB] Railway init failed:", e);
+  }
+}
+
+function copyVercelTemplate() {
+  try {
+    if (!existsSync("/tmp")) {
+      mkdirSync("/tmp", { recursive: true });
+    }
+    const templatePaths = [
+      path.join(process.cwd(), "db", "teamhub-empty.db"),
+      "/var/task/db/teamhub-empty.db",
+    ];
+    for (const templatePath of templatePaths) {
+      if (existsSync(templatePath)) {
+        try {
+          copyFileSync(templatePath, VERCEL_TMP_DB_PATH);
+          console.log(`[DB] Copied template from ${templatePath} to ${VERCEL_TMP_DB_PATH}`);
+          break;
+        } catch (e) {
+          console.error(`[DB] Failed to copy from ${templatePath}:`, e);
+        }
+      }
+    }
+  } catch (e) {
+    console.error("[DB] Vercel init failed:", e);
+  }
 }
 
 const dbUrl = getDbUrl();
