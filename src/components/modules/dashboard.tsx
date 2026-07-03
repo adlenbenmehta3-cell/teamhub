@@ -401,7 +401,7 @@ export function Dashboard({ user, onNavigate }: Props) {
  <div className="flex items-center justify-between mb-4">
  <Trophy className="w-7 h-7" />
  <Badge className="bg-primary-foreground/20 text-primary-foreground border-0">
- {roleLabels[user.role]}
+ {user.title || roleLabels[user.role]}
  </Badge>
  </div>
  <p className="text-sm opacity-90">{t("dashboard.totalPoints")}</p>

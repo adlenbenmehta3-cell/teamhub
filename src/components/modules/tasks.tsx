@@ -51,7 +51,6 @@ import { useLanguage } from "@/components/language-provider";
 import {
   PRIORITY_COLORS,
   STATUS_COLORS,
-  RECURRENCE_PATTERN_LABELS,
   formatArabicDateTime,
   formatEnglishDateTime,
   formatArabicDate,

@@ -28,8 +28,6 @@ import {
 import { toast } from "sonner";
 import { useLanguage } from "@/components/language-provider";
 import {
- ROLE_LABELS,
- DEPARTMENT_LABELS,
  ROLE_COLORS,
  timeAgoArabic,
  timeAgoEnglish,

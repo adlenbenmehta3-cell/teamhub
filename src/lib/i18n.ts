@@ -463,6 +463,9 @@ export const translations: Record<Language, Dict> = {
     "team.role.label": "الدور",
     "team.department.label": "القسم",
     "team.jobTitle.label": "المسمى الوظيفي",
+    "team.customRole.label": "المسمى الوظيفي المخصص",
+    "team.customRole.placeholder": "مثال: مدير تسويق، مصمم جرافيك، كاتب محتوى...",
+    "team.customRole.hint": "اختر الاسم الذي تريد إطلاقه على هذا العامل — يظهر بدل المسمى الثابت.",
     "team.jobTitle.placeholder": "مثال: مدير حسابات التواصل",
     "team.phone.label": "رقم الهاتف",
     "team.phone.placeholder": "+213...",
@@ -486,6 +489,7 @@ export const translations: Record<Language, Dict> = {
 
     // Roles
     "role.team_leader": "قائد الفريق",
+    "role.admin": "أدمن",
     "role.senior_marketer": "تسويقي أول",
     "role.marketing_specialist": "أخصائي تسويق",
     "role.junior_marketer": "تسويقي مبتدئ",
@@ -976,6 +980,9 @@ export const translations: Record<Language, Dict> = {
     "team.role.label": "Role",
     "team.department.label": "Department",
     "team.jobTitle.label": "Job Title",
+    "team.customRole.label": "Custom Role Title",
+    "team.customRole.placeholder": "e.g., Marketing Manager, Graphic Designer, Content Writer...",
+    "team.customRole.hint": "Choose any name you want for this worker — it shows instead of a fixed role.",
     "team.jobTitle.placeholder": "e.g., Social Media Manager",
     "team.phone.label": "Phone",
     "team.phone.placeholder": "+213...",
@@ -999,6 +1006,7 @@ export const translations: Record<Language, Dict> = {
 
     // Roles
     "role.team_leader": "Team Leader",
+    "role.admin": "Admin",
     "role.senior_marketer": "Senior Marketer",
     "role.marketing_specialist": "Marketing Specialist",
     "role.junior_marketer": "Junior Marketer",

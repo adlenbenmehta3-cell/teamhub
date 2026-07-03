@@ -1,60 +1,7 @@
 // Client-safe labels (no server-only imports)
-
-export const ROLE_LABELS: Record<string, string> = {
-  TEAM_LEADER: "قائد الفريق",
-  SENIOR_MARKETER: "تسويقي أول",
-  MARKETING_SPECIALIST: "أخصائي تسويق",
-  JUNIOR_MARKETER: "تسويقي مبتدئ",
-  GUEST: "زائر",
-};
-
-export const DEPARTMENT_LABELS: Record<string, string> = {
-  SOCIAL_MEDIA: "التواصل الاجتماعي",
-  CONTENT_CREATION: "إنشاء المحتوى",
-  SEO_ANALYTICS: "تحسين محركات البحث والتحليلات",
-  PAID_ADS: "الإعلانات المدفوعة",
-  EMAIL_MARKETING: "التسويق عبر البريد",
-  GENERAL: "عام",
-};
-
-export const TASK_PRIORITY_LABELS: Record<string, string> = {
-  LOW: "منخفضة",
-  MEDIUM: "متوسطة",
-  HIGH: "عالية",
-  URGENT: "عاجلة",
-};
-
-export const TASK_STATUS_LABELS: Record<string, string> = {
-  OPEN: "مفتوحة",
-  IN_PROGRESS: "قيد التنفيذ",
-  COMPLETED: "مكتملة",
-  CANCELLED: "ملغاة",
-};
-
-export const RECURRENCE_PATTERN_LABELS: Record<string, string> = {
-  DAILY: "يومي",
-  WEEKLY: "أسبوعي",
-  MONTHLY: "شهري",
-  WEEKDAYS: "أيام العمل",
-};
-
-export const MEETING_TYPE_LABELS: Record<string, string> = {
-  STANDUP: "اجتماع يومي",
-  WEEKLY: "اجتماع أسبوعي",
-  PROJECT_REVIEW: "مراجعة مشروع",
-  ONE_ON_ONE: "اجتماع فردي",
-  BRAINSTORM: "جلسة عصف ذهني",
-  GENERAL: "اجتماع عام",
-};
-
-export const KB_CATEGORY_LABELS: Record<string, string> = {
-  PLAYBOOK: "دليل إجرائي",
-  TEMPLATE: "قالب",
-  BRAND_GUIDE: "دليل العلامة",
-  TOOL_TUTORIAL: "شرح أداة",
-  CASE_STUDY: "دراسة حالة",
-  FAQ: "أسئلة شائعة",
-};
+// All labels are now language-aware via i18n keys.
+// Components should use the `t()` function from useLanguage() instead of these.
+// These maps are kept only for color/styling (which don't need translation).
 
 export const ROLE_COLORS: Record<string, string> = {
   TEAM_LEADER: "bg-primary/10 text-primary border-primary/30",
@@ -138,9 +85,9 @@ export function formatEnglishTime(date: string | Date): string {
 export function formatDuration(minutes: number): string {
   const h = Math.floor(minutes / 60);
   const m = minutes % 60;
-  if (h === 0) return `${m} دقيقة`;
-  if (m === 0) return `${h} ساعة`;
-  return `${h} س ${m} د`;
+  if (h === 0) return `${m} min`;
+  if (m === 0) return `${h}h`;
+  return `${h}h ${m}m`;
 }
 
 export function timeAgoArabic(date: string | Date): string {

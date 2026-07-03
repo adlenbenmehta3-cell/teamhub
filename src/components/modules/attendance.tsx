@@ -15,7 +15,6 @@ import { Clock, LogIn, LogOut, Calendar, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { useLanguage } from "@/components/language-provider";
 import {
- DEPARTMENT_LABELS,
  formatArabicDate,
  formatEnglishDate,
  formatArabicTime,
@@ -35,6 +34,15 @@ export function AttendanceModule({ user }: Props) {
  const [loading, setLoading] = useState(true);
  const [actionLoading, setActionLoading] = useState(false);
  const isTL = user.role === "TEAM_LEADER";
+
+ const deptLabels: Record<string, string> = {
+   SOCIAL_MEDIA: t("dept.social_media"),
+   CONTENT_CREATION: t("dept.content_creation"),
+   SEO_ANALYTICS: t("dept.seo_analytics"),
+   PAID_ADS: t("dept.paid_ads"),
+   EMAIL_MARKETING: t("dept.email_marketing"),
+   GENERAL: t("dept.general"),
+ };
 
  useEffect(() => {
  loadData();
@@ -271,7 +279,7 @@ export function AttendanceModule({ user }: Props) {
  <div>
  <p className="font-medium text-sm">{member.name}</p>
  <p className="text-xs text-muted-foreground">
- {DEPARTMENT_LABELS[member.department] ||
+ {deptLabels[member.department] ||
  member.department}
  </p>
  </div>

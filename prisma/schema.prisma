@@ -36,10 +36,10 @@ model User {
   name          String
   email         String     @unique
   password      String
-  role          Role       @default(JUNIOR_MARKETER)
+  role          Role       @default(JUNIOR_MARKETER)  // Internal: TEAM_LEADER = admin, others = worker
   department    Department @default(GENERAL)
   avatar        String?
-  title         String?    // Job title (e.g., "Senior Social Media Manager")
+  title         String?    // Custom role name / job title (admin sets this freely)
   phone         String?
   timezone      String     @default("Africa/Algiers")
   totalPoints   Int        @default(0)

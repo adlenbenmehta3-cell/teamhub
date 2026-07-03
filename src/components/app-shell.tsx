@@ -267,7 +267,7 @@ function SidebarContent({
             variant="outline"
             className="bg-muted text-foreground border-border text-xs font-medium"
           >
-            {roleLabels[user.role] || user.role}
+            {user.title || roleLabels[user.role] || user.role}
           </Badge>
           <span className="text-xs text-primary font-semibold flex items-center gap-1">
             <Trophy className="w-3 h-3" />
