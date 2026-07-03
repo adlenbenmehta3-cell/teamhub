@@ -201,6 +201,10 @@ export const translations: Record<Language, Dict> = {
     "tasks.alreadyCompleted": "تم إتمام هذه المهمة بالفعل",
     "tasks.notFound": "المهمة غير موجودة",
     "tasks.invalidAction": "إجراء غير صالح",
+    "tasks.delete": "حذف",
+    "tasks.deleteConfirm": "هل تريد حذف المهمة \"{title}\"؟ لا يمكن التراجع عن هذا الإجراء.",
+    "tasks.deleted": "تم حذف المهمة",
+    "tasks.deleteFailed": "فشل حذف المهمة",
 
     // Recurring Tasks
     "tasks.recurring": "مهمة متكررة",
@@ -741,6 +745,10 @@ export const translations: Record<Language, Dict> = {
     "tasks.alreadyCompleted": "This task is already completed",
     "tasks.notFound": "Task not found",
     "tasks.invalidAction": "Invalid action",
+    "tasks.delete": "Delete",
+    "tasks.deleteConfirm": "Delete task \"{title}\"? This action cannot be undone.",
+    "tasks.deleted": "Task deleted",
+    "tasks.deleteFailed": "Failed to delete task",
 
     // Recurring Tasks
     "tasks.recurring": "Recurring Task",

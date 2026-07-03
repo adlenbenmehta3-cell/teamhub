@@ -49,6 +49,7 @@ import {
   Info,
   Folder,
   ExternalLink,
+  Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useLanguage } from "@/components/language-provider";
@@ -291,6 +292,21 @@ export function TasksModule({ user }: Props) {
       loadTasks();
     } catch {
       toast.error(t("tasks.reassignFailed"));
+    }
+  };
+
+  const handleDeleteTask = async (taskId: string, taskTitle: string) => {
+    if (!confirm(t("tasks.deleteConfirm", { title: taskTitle }))) return;
+    try {
+      const res = await fetch(`/api/tasks/${taskId}`, { method: "DELETE" });
+      if (!res.ok) {
+        toast.error(t("tasks.deleteFailed"));
+        return;
+      }
+      toast.success(t("tasks.deleted"));
+      loadTasks();
+    } catch {
+      toast.error(t("tasks.deleteFailed"));
     }
   };
 
@@ -569,24 +585,34 @@ export function TasksModule({ user }: Props) {
                             </a>
                           )}
 
-                          {/* Admin: reassign dropdown */}
-                          {isTL && task.status === "OPEN" && (
-                            <div className="mt-2">
-                              <Select
-                                value={task.assigneeId || ""}
-                                onValueChange={(v) => handleAssign(task.id, v)}
+                          {/* Admin: reassign dropdown + delete button */}
+                          {isTL && (
+                            <div className="mt-2 flex items-center gap-2">
+                              {task.status === "OPEN" && (
+                                <Select
+                                  value={task.assigneeId || ""}
+                                  onValueChange={(v) => handleAssign(task.id, v)}
+                                >
+                                  <SelectTrigger className="w-40 h-8 text-xs">
+                                    <SelectValue placeholder={t("tasks.reassign")} />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {team.map((m) => (
+                                      <SelectItem key={m.id} value={m.id}>
+                                        {m.name}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              )}
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-8 px-2 border-destructive/30 text-destructive hover:bg-destructive/5"
+                                onClick={() => handleDeleteTask(task.id, task.title)}
                               >
-                                <SelectTrigger className="w-40 h-8 text-xs">
-                                  <SelectValue placeholder={t("tasks.reassign")} />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {team.map((m) => (
-                                    <SelectItem key={m.id} value={m.id}>
-                                      {m.name}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </Button>
                             </div>
                           )}
                         </div>
