@@ -395,13 +395,15 @@ export function TasksModule({ user }: Props) {
         )}
       </div>
 
-      {/* Tabs: Tasks vs Recurring */}
+      {/* Tabs: Tasks (Recurring tab only for admin) */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
           <TabsTrigger value="tasks">{t("tasks.title")}</TabsTrigger>
-          <TabsTrigger value="recurring">
-            {t("tasks.recurringTab")}
-          </TabsTrigger>
+          {isTL && (
+            <TabsTrigger value="recurring">
+              {t("tasks.recurringTab")}
+            </TabsTrigger>
+          )}
         </TabsList>
 
         {/* ===================== TASKS TAB ===================== */}
