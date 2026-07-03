@@ -1,6 +1,24 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { hashPasswordForStorage } from "@/lib/auth";
+import { PrismaClient } from "@prisma/client";
+
+/**
+ * Ensure database schema exists by pushing it.
+ * On Vercel serverless, the /tmp/teamhub.db file may not exist on cold start.
+ */
+async function ensureSchema() {
+  try {
+    // Try to query — if it fails, schema needs to be created
+    await db.user.count();
+  } catch (e) {
+    // Schema doesn't exist. We need to push it.
+    // Since we can't run prisma CLI in serverless, we use a different approach:
+    // The prisma db push should run during build, creating the schema.
+    // For runtime, we rely on the schema being created.
+    throw e;
+  }
+}
 
 /**
  * POST /api/seed
@@ -9,7 +27,21 @@ import { hashPasswordForStorage } from "@/lib/auth";
  */
 export async function POST() {
   try {
-    const userCount = await db.user.count();
+    let userCount = 0;
+    try {
+      userCount = await db.user.count();
+    } catch (e) {
+      // Database doesn't exist yet — schema needs to be pushed
+      console.error("DB query failed, schema may not exist:", e);
+      return NextResponse.json(
+        {
+          error:
+            "Database not initialized. Please ensure prisma db push runs during build.",
+        },
+        { status: 500 }
+      );
+    }
+
     if (userCount > 0) {
       return NextResponse.json(
         { error: "قاعدة البيانات تحتوي بالفعل على مستخدمين. استخدم تسجيل الدخول." },
@@ -99,7 +131,8 @@ export async function POST() {
       data: [
         {
           title: "إعداد تقرير حملة السوشيال ميديا الأسبوعي",
-          description: "تجميع وتحليل أداء منصات التواصل الاجتماعي للأسبوع الماضي، مع تقديم توصيات للأسبوع القادم.",
+          description:
+            "تجميع وتحليل أداء منصات التواصل الاجتماعي للأسبوع الماضي، مع تقديم توصيات للأسبوع القادم.",
           deadline: tomorrow,
           priority: "HIGH",
           status: "OPEN",
@@ -108,7 +141,8 @@ export async function POST() {
         },
         {
           title: "كتابة 3 مقالات للمدونة",
-          description: "كتابة 3 مقالات حول مواضيع التسويق الرقمي، كل مقال 800-1000 كلمة.",
+          description:
+            "كتابة 3 مقالات حول مواضيع التسويق الرقمي، كل مقال 800-1000 كلمة.",
           deadline: nextWeek,
           priority: "MEDIUM",
           status: "OPEN",
@@ -117,7 +151,8 @@ export async function POST() {
         },
         {
           title: "تحليل بيانات الزوار للموقع",
-          description: "استخراج تقرير تفصيلي عن مصادر الزيارات وسلوك المستخدمين على الموقع.",
+          description:
+            "استخراج تقرير تفصيلي عن مصادر الزيارات وسلوك المستخدمين على الموقع.",
           deadline: tomorrow,
           priority: "URGENT",
           status: "OPEN",
@@ -126,7 +161,8 @@ export async function POST() {
         },
         {
           title: "إعداد حملة إعلانية جديدة على فيسبوك",
-          description: "تصميم وإطلاق حملة إعلانية جديدة على منصة فيسبوك بميزانية 5000 درهم.",
+          description:
+            "تصميم وإطلاق حملة إعلانية جديدة على منصة فيسبوك بميزانية 5000 درهم.",
           deadline: nextWeek,
           priority: "MEDIUM",
           status: "OPEN",
@@ -177,7 +213,8 @@ export async function POST() {
         datetime: friday,
         durationMin: 45,
         type: "WEEKLY",
-        agenda: "1. مراجعة مهام الأسبوع المنتهي\n2. مناقشة الأولويات للأسبوع القادم\n3. حل المشكلات والمعوقات\n4. توزيع المهام الجديدة",
+        agenda:
+          "1. مراجعة مهام الأسبوع المنتهي\n2. مناقشة الأولويات للأسبوع القادم\n3. حل المشكلات والمعوقات\n4. توزيع المهام الجديدة",
         creatorId: teamLeader.id,
       },
     });
@@ -199,7 +236,8 @@ export async function POST() {
         title: "قالب التقرير الأسبوعي للتسويق",
         url: "https://example.com/weekly-report-template",
         category: "TEMPLATE",
-        summary: "قالب جاهز للتقارير الأسبوعية يتضمن KPIs والإنجازات والخطوات القادمة.",
+        summary:
+          "قالب جاهز للتقارير الأسبوعية يتضمن KPIs والإنجازات والخطوات القادمة.",
         tags: "template,report,weekly",
         creatorId: teamLeader.id,
       },

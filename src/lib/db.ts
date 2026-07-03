@@ -4,10 +4,10 @@ const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
 };
 
-// Default to /tmp/teamhub.db for serverless environments (Vercel)
-// Falls back to local file for dev
+// Use /tmp for Vercel serverless (writable at runtime), local file for dev
 const dbUrl =
-  process.env.DATABASE_URL || "file:/tmp/teamhub.db";
+  process.env.DATABASE_URL ||
+  (process.env.VERCEL ? "file:/tmp/teamhub.db" : "file:./db/custom.db");
 
 export const db =
   globalForPrisma.prisma ??
