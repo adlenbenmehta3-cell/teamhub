@@ -1,9 +1,11 @@
 import { PrismaClient } from "@prisma/client";
 import { existsSync, copyFileSync, mkdirSync } from "fs";
 import path from "path";
+import { execSync } from "child_process";
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
+  schemaMigrated: boolean | undefined;
 };
 
 /**
@@ -49,7 +51,6 @@ function getDbUrl(): string {
 
 function ensureRailwayDb() {
   try {
-    // Ensure /data directory exists
     if (!existsSync("/data")) {
       mkdirSync("/data", { recursive: true });
     }
@@ -115,3 +116,37 @@ export const db =
   });
 
 if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = db;
+
+/**
+ * Auto-migrate: if the database exists but schema is outdated,
+ * run prisma db push to apply changes. This is especially important
+ * on Railway where the persistent /data/teamhub.db retains old schema
+ * across deployments.
+ */
+export async function ensureSchemaUpToDate() {
+  if (globalForPrisma.schemaMigrated) return;
+
+  try {
+    // Try a query that requires the latest schema (recurringTask table)
+    await db.recurringTask.count();
+    globalForPrisma.schemaMigrated = true;
+  } catch (e) {
+    // Schema is outdated — run prisma db push
+    console.log("[DB] Schema outdated, running prisma db push...");
+    try {
+      execSync("npx prisma db push --accept-data-loss", {
+        stdio: "pipe",
+        env: {
+          ...process.env,
+          DATABASE_URL: dbUrl,
+        },
+        timeout: 30000,
+      });
+      console.log("[DB] Schema migration complete.");
+      globalForPrisma.schemaMigrated = true;
+    } catch (migrateErr) {
+      console.error("[DB] Auto-migration failed:", migrateErr);
+      // Don't set schemaMigrated — will retry on next request
+    }
+  }
+}

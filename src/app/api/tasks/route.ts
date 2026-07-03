@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/db";
+import { db, ensureSchemaUpToDate } from "@/lib/db";
 import { getCurrentUser, isTeamLeader } from "@/lib/auth";
 import { POINTS_CONFIG } from "@/lib/points";
 
@@ -10,6 +10,7 @@ import { POINTS_CONFIG } from "@/lib/points";
 
 export async function GET(req: NextRequest) {
   try {
+    await ensureSchemaUpToDate();
     const user = await getCurrentUser();
     if (!user) {
       return NextResponse.json({ error: "غير مصرح" }, { status: 401 });
@@ -165,6 +166,7 @@ function shouldGenerateForDate(date: Date, pattern: string): boolean {
 
 export async function POST(req: NextRequest) {
   try {
+    await ensureSchemaUpToDate();
     const user = await getCurrentUser();
     if (!user) {
       return NextResponse.json({ error: "غير مصرح" }, { status: 401 });
