@@ -14,6 +14,7 @@ import {
   Menu,
   X,
   Clock,
+  ClipboardList,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -30,6 +31,7 @@ import { LeaderboardModule } from "@/components/modules/leaderboard";
 import { KnowledgeBaseModule } from "@/components/modules/knowledge-base";
 import { AnnouncementsModule } from "@/components/modules/announcements";
 import { TeamModule } from "@/components/modules/team";
+import { WorkPlansModule } from "@/components/modules/work-plans";
 import type { User } from "@/app/page";
 
 interface Props {
@@ -55,6 +57,7 @@ export function AppShell({ user, activeTab, onTabChange, onLogout }: Props) {
     { id: "dashboard", label: t("nav.dashboard"), icon: LayoutDashboard },
     { id: "attendance", label: t("nav.attendance"), icon: Clock },
     { id: "tasks", label: t("nav.tasks"), icon: CheckSquare },
+    { id: "workplans", label: t("nav.workplans"), icon: ClipboardList },
     { id: "reports", label: t("nav.reports"), icon: FileText },
     { id: "meetings", label: t("nav.meetings"), icon: Calendar },
     { id: "leaderboard", label: t("nav.leaderboard"), icon: Trophy },
@@ -74,6 +77,8 @@ export function AppShell({ user, activeTab, onTabChange, onLogout }: Props) {
         return <AttendanceModule user={user} />;
       case "tasks":
         return <TasksModule user={user} />;
+      case "workplans":
+        return <WorkPlansModule user={user} />;
       case "reports":
         return <ReportsModule user={user} />;
       case "meetings":
