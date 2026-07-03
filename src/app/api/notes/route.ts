@@ -75,42 +75,37 @@ export async function POST(req: NextRequest) {
 
     const lang = sourceLang || "en";
 
-    // Auto-translate using AI
+    // Auto-translate using Google Translate (free, no API key needed)
     let translatedAr: string | null = null;
     let translatedEn: string | null = null;
 
     try {
-      // Ensure ZAI config file exists (needed on Railway)
-      const { ensureZAIConfig } = await import("@/lib/zai-config");
-      ensureZAIConfig();
-
-      const ZAI = (await import("z-ai-web-dev-sdk")).default;
-      const zai = await ZAI.create();
-
       if (lang === "en") {
         // Admin wrote in English → translate to Arabic
         translatedEn = content;
-        const result = await zai.chat.completions.create({
-          messages: [
-            { role: "system", content: "You are a professional translator. Translate the user's text to Arabic. Output only the Arabic translation, nothing else." },
-            { role: "user", content: content },
-          ],
-        });
-        translatedAr = result.choices?.[0]?.message?.content?.trim() || content;
+        const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=ar&dt=t&q=${encodeURIComponent(content)}`;
+        const res = await fetch(url);
+        const data = await res.json();
+        // Response format: [[["translated","original",...],...],...]
+        if (data && data[0]) {
+          translatedAr = data[0].map((item: any) => item[0]).join("");
+        }
       } else {
         // Admin wrote in Arabic → translate to English
         translatedAr = content;
-        const result = await zai.chat.completions.create({
-          messages: [
-            { role: "system", content: "You are a professional translator. Translate the user's text to English. Output only the English translation, nothing else." },
-            { role: "user", content: content },
-          ],
-        });
-        translatedEn = result.choices?.[0]?.message?.content?.trim() || content;
+        const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=ar&tl=en&dt=t&q=${encodeURIComponent(content)}`;
+        const res = await fetch(url);
+        const data = await res.json();
+        if (data && data[0]) {
+          translatedEn = data[0].map((item: any) => item[0]).join("");
+        }
       }
+
+      // Fallback if translation returned empty
+      if (lang === "en" && !translatedAr) translatedAr = content;
+      if (lang === "ar" && !translatedEn) translatedEn = content;
     } catch (translateErr) {
       console.error("Translation failed:", translateErr);
-      // Fallback: use original content for both
       if (lang === "en") {
         translatedAr = content;
       } else {
