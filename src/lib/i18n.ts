@@ -572,6 +572,7 @@ export const translations: Record<Language, Dict> = {
     "nav.kb": "Knowledge Base",
     "nav.announcements": "Announcements",
     "nav.team": "Team Management",
+    "nav.workplans": "Work Plans",
     "nav.menu": "Menu",
 
     // Greetings
