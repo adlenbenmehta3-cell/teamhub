@@ -76,7 +76,7 @@ export function LoginScreen({ onLogin }: Props) {
           <div className="w-16 h-16 rounded-xl bg-primary flex items-center justify-center shadow-lg">
             <Users className="w-8 h-8 text-primary-foreground" />
           </div>
-          <h1 className="mt-5 text-3xl font-bold tracking-tight">TeamHub</h1>
+          <h1 className="mt-5 text-3xl font-bold tracking-tight">Innov8 Brands</h1>
           <p className="mt-1.5 text-sm text-muted-foreground">
             {t("app.tagline")}
           </p>

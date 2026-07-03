@@ -22,6 +22,7 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const status = searchParams.get("status") || "open";
     const assigneeId = searchParams.get("assignee");
+    const todayOnly = searchParams.get("today") === "true";
 
     const where: any = {};
     if (status !== "all") {
@@ -29,6 +30,14 @@ export async function GET(req: NextRequest) {
     }
     if (assigneeId) {
       where.assigneeId = assigneeId;
+    }
+    // Filter to show only tasks due today
+    if (todayOnly) {
+      const startOfDay = new Date();
+      startOfDay.setHours(0, 0, 0, 0);
+      const endOfDay = new Date();
+      endOfDay.setHours(23, 59, 59, 999);
+      where.deadline = { gte: startOfDay, lte: endOfDay };
     }
 
     const tasks = await db.task.findMany({

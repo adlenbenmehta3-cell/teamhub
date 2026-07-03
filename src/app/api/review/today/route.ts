@@ -95,33 +95,59 @@ export async function GET() {
       completedAt: c.completedAt,
     }));
 
-    // 3. Summary
+    // 3. Get today's completed tasks with Drive links
+    const startOfDay = new Date(today + "T00:00:00.000Z");
+    const endOfDay = new Date(today + "T23:59:59.999Z");
+    const completedTasks = await db.task.findMany({
+      where: {
+        status: "COMPLETED",
+        driveLink: { not: null },
+        completedAt: { gte: startOfDay, lte: endOfDay },
+      },
+      include: {
+        assignee: {
+          select: { id: true, name: true, title: true, department: true },
+        },
+      },
+      orderBy: { completedAt: "desc" },
+    });
+
+    const taskLinks = completedTasks.map((t) => ({
+      type: "task",
+      id: t.id,
+      workerName: t.assignee?.name || "—",
+      workerTitle: t.assignee?.title || null,
+      department: t.assignee?.department || "GENERAL",
+      driveLink: t.driveLink,
+      taskTitle: t.title,
+      taskDescription: t.description,
+      completedAt: t.completedAt,
+    }));
+
+    // 4. Summary
     const allWorkers = await db.user.count({
       where: { active: true, role: { not: "TEAM_LEADER" } },
     });
 
-    const workersWithReports = new Set(
-      reportLinks.map((r) => r.workerName)
-    ).size;
-    const workersWithWorkPlanLinks = new Set(
-      workPlanLinks.map((r) => r.workerName)
-    ).size;
     const allWorkersWithLinks = new Set([
       ...reportLinks.map((r) => r.workerName),
       ...workPlanLinks.map((r) => r.workerName),
+      ...taskLinks.map((r) => r.workerName),
     ]).size;
 
     return NextResponse.json({
       date: today,
       reportLinks,
       workPlanLinks,
+      taskLinks,
       summary: {
         totalWorkers: allWorkers,
         workersSubmittedLinks: allWorkersWithLinks,
         workersNotSubmitted: allWorkers - allWorkersWithLinks,
         totalReportLinks: reportLinks.length,
         totalWorkPlanLinks: workPlanLinks.length,
-        totalLinks: reportLinks.length + workPlanLinks.length,
+        totalTaskLinks: taskLinks.length,
+        totalLinks: reportLinks.length + workPlanLinks.length + taskLinks.length,
       },
     });
   } catch (e) {

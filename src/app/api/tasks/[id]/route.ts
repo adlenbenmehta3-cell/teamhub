@@ -44,6 +44,29 @@ export async function PATCH(
         );
       }
 
+      // Workers must provide a Google Drive link to complete a task
+      const driveLink = body.driveLink?.trim();
+      if (!isTeamLeader(user.role) && !driveLink) {
+        return NextResponse.json(
+          { error: "يجب إضافة رابط Google Drive قبل إتمام المهمة" },
+          { status: 400 }
+        );
+      }
+
+      // Validate URL if provided
+      let normalizedDriveLink: string | null = null;
+      if (driveLink) {
+        try {
+          new URL(driveLink);
+          normalizedDriveLink = driveLink;
+        } catch {
+          return NextResponse.json(
+            { error: "رابط Google Drive غير صالح" },
+            { status: 400 }
+          );
+        }
+      }
+
       const now = new Date();
       const isEarly = now < task.deadline;
       const points = isEarly
@@ -56,6 +79,7 @@ export async function PATCH(
           status: "COMPLETED",
           completedAt: now,
           completionNotes: body.notes || null,
+          driveLink: normalizedDriveLink,
         },
         include: {
           assignee: { select: { id: true, name: true, department: true } },

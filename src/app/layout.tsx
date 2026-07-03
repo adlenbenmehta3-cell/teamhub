@@ -14,11 +14,11 @@ const poppins = Poppins({
 });
 
 export const metadata: Metadata = {
-  title: "TeamHub — Marketing Team Management",
+  title: "Innov8 Brands — Brand Management Platform",
   description:
     "Complete platform for managing marketing teams: attendance, tasks, daily reports, meetings, and performance tracking.",
   keywords: ["team management", "marketing", "attendance", "tasks", "reports", "performance"],
-  authors: [{ name: "TeamHub" }],
+  authors: [{ name: "Innov8 Brands" }],
 };
 
 export default function RootLayout({

@@ -122,7 +122,7 @@ export function AppShell({ user, activeTab, onTabChange, onLogout }: Props) {
           <div className="w-7 h-7 rounded-md bg-primary flex items-center justify-center">
             <Users className="w-4 h-4 text-primary-foreground" />
           </div>
-          <span className="font-bold text-foreground">TeamHub</span>
+          <span className="font-bold text-foreground">Innov8 Brands</span>
         </div>
         <div className="flex items-center gap-1">
           <LanguageSwitcher />
@@ -192,15 +192,15 @@ export function AppShell({ user, activeTab, onTabChange, onLogout }: Props) {
         <footer className="mt-auto border-t border-border bg-background py-4 px-4 lg:px-8">
           <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-muted-foreground">
             <span>
-              © 2026 TeamHub —{" "}
+              © 2026 Innov8 Brands —{" "}
               {lang === "ar"
-                ? "منصة إدارة فريق التسويق"
-                : "Marketing Team Management"}
+                ? "منصة إدارة العلامة التجارية"
+                : "Brand Management Platform"}
             </span>
             <span>
               {lang === "ar"
-                ? "صُنع لقادة الفرق"
-                : "Built for team leaders"}
+                ? "صُنع لإدارة العلامات"
+                : "Built for brand management"}
             </span>
           </div>
         </footer>
@@ -246,7 +246,7 @@ function SidebarContent({
               TeamHub
             </h1>
             <p className="text-xs text-muted-foreground">
-              {lang === "ar" ? "إدارة فريق التسويق" : "Marketing Team Hub"}
+              {lang === "ar" ? "إدارة العلامة التجارية" : "Brand Management Hub"}
             </p>
           </div>
         </div>

@@ -15,6 +15,7 @@ import {
   ClipboardCheck,
   FileText,
   ClipboardList,
+  CheckSquare,
   ExternalLink,
   Folder,
   Users,
@@ -64,12 +65,14 @@ interface ReviewData {
   date: string;
   reportLinks: ReportLink[];
   workPlanLinks: WorkPlanLink[];
+  taskLinks: WorkPlanLink[];
   summary: {
     totalWorkers: number;
     workersSubmittedLinks: number;
     workersNotSubmitted: number;
     totalReportLinks: number;
     totalWorkPlanLinks: number;
+    totalTaskLinks: number;
     totalLinks: number;
   };
 }
@@ -281,6 +284,43 @@ export function ReviewModule({ user }: Props) {
                 taskLabel={link.taskTitle}
                 taskDescription={link.taskDescription}
                 workPlanTitle={link.workPlanTitle}
+                t={t}
+                formatTime={formatTime}
+                deptLabels={deptLabels}
+              />
+            ))}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Task Links Section */}
+      {data.taskLinks && data.taskLinks.length > 0 && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <CheckSquare className="w-4 h-4 text-primary" />
+              {lang === "ar" ? "روابط المهام" : "Task Links"}
+              <Badge variant="outline" className="ml-2">
+                {data.taskLinks.length}
+              </Badge>
+            </CardTitle>
+            <CardDescription>
+              {lang === "ar"
+                ? "روابط Drive المقدمة في المهام"
+                : "Drive links submitted for tasks"}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {data.taskLinks.map((link) => (
+              <LinkCard
+                key={link.id}
+                workerName={link.workerName}
+                workerTitle={link.workerTitle}
+                department={link.department}
+                driveLink={link.driveLink}
+                time={link.completedAt || ""}
+                taskLabel={link.taskTitle}
+                taskDescription={link.taskDescription}
                 t={t}
                 formatTime={formatTime}
                 deptLabels={deptLabels}

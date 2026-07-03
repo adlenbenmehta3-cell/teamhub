@@ -1,5 +1,5 @@
 /**
- * TeamHub i18n — Arabic + English translations
+ * Innov8 Brands i18n — Arabic + English translations
  */
 
 export type Language = "ar" | "en";
@@ -17,8 +17,8 @@ export const translations: Record<Language, Dict> = {
   // ============================================================
   ar: {
     // App
-    "app.name": "TeamHub",
-    "app.tagline": "منصة إدارة فريق التسويق",
+    "app.name": "Innov8 Brands",
+    "app.tagline": "منصة إدارة العلامة التجارية",
     "app.loading": "جاري التحميل...",
 
     // Login
@@ -37,7 +37,7 @@ export const translations: Record<Language, Dict> = {
     "login.accountDisabled": "هذا الحساب معطّل. تواصل مع قائد الفريق",
     "login.loginError": "حدث خطأ أثناء تسجيل الدخول",
     "login.welcome": "مرحبًا بك، {name}!",
-    "login.copyright": "© 2026 TeamHub — جميع الحقوق محفوظة",
+    "login.copyright": "© 2026 Innov8 Brands — جميع الحقوق محفوظة",
 
     // Logout
     "logout.success": "تم تسجيل الخروج بنجاح",
@@ -558,8 +558,8 @@ export const translations: Record<Language, Dict> = {
   // ============================================================
   en: {
     // App
-    "app.name": "TeamHub",
-    "app.tagline": "Marketing Team Management Platform",
+    "app.name": "Innov8 Brands",
+    "app.tagline": "Brand Management Platform Platform",
     "app.loading": "Loading...",
 
     // Login
@@ -578,7 +578,7 @@ export const translations: Record<Language, Dict> = {
     "login.accountDisabled": "This account is disabled. Contact your team leader",
     "login.loginError": "An error occurred during login",
     "login.welcome": "Welcome, {name}!",
-    "login.copyright": "© 2026 TeamHub — All rights reserved",
+    "login.copyright": "© 2026 Innov8 Brands — All rights reserved",
 
     // Logout
     "logout.success": "Logged out successfully",

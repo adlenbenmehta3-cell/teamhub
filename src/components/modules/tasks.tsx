@@ -41,10 +41,14 @@ import {
   Clock,
   AlertCircle,
   Check,
+  Circle,
+  CheckCircle2,
   Repeat,
   CalendarDays,
   XCircle,
   Info,
+  Folder,
+  ExternalLink,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useLanguage } from "@/components/language-provider";
@@ -68,11 +72,15 @@ export function TasksModule({ user }: Props) {
   const [recurringTasks, setRecurringTasks] = useState<any[]>([]);
   const [team, setTeam] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState("open");
+  const [filter, setFilter] = useState("today");
   const [activeTab, setActiveTab] = useState("tasks");
   const [createOpen, setCreateOpen] = useState(false);
   const [createRecurringOpen, setCreateRecurringOpen] = useState(false);
   const isTL = user.role === "TEAM_LEADER";
+
+  // Task completion with Drive link
+  const [completingTaskId, setCompletingTaskId] = useState<string | null>(null);
+  const [taskDriveLink, setTaskDriveLink] = useState("");
 
   // One-time task form
   const [title, setTitle] = useState("");
@@ -117,7 +125,13 @@ export function TasksModule({ user }: Props) {
 
   const loadTasks = async () => {
     try {
-      const res = await fetch(`/api/tasks?status=${filter}`);
+      let url = "/api/tasks?";
+      if (filter === "today") {
+        url += "status=open&today=true";
+      } else {
+        url += `status=${filter}`;
+      }
+      const res = await fetch(url);
       const data = await res.json();
       setTasks(data.tasks || []);
     } finally {
@@ -228,12 +242,20 @@ export function TasksModule({ user }: Props) {
     }
   };
 
-  const handleComplete = async (taskId: string) => {
+  const handleComplete = async (taskId: string, driveLink: string) => {
+    if (!driveLink.trim()) {
+      toast.error(
+        lang === "ar"
+          ? "يجب إضافة رابط Google Drive قبل إتمام المهمة"
+          : "You must add a Google Drive link before completing the task"
+      );
+      return;
+    }
     try {
       const res = await fetch(`/api/tasks/${taskId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "complete" }),
+        body: JSON.stringify({ action: "complete", driveLink }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -245,6 +267,8 @@ export function TasksModule({ user }: Props) {
           ? t("tasks.completedEarly", { points: data.points })
           : t("tasks.completedMsg", { points: data.points })
       );
+      setCompletingTaskId(null);
+      setTaskDriveLink("");
       loadTasks();
     } catch {
       toast.error(t("tasks.completeFailed"));
@@ -373,6 +397,7 @@ export function TasksModule({ user }: Props) {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="today">{lang === "ar" ? "اليوم" : "Today"}</SelectItem>
                 <SelectItem value="open">{t("tasks.open")}</SelectItem>
                 <SelectItem value="completed">
                   {t("tasks.completed")}
@@ -402,6 +427,8 @@ export function TasksModule({ user }: Props) {
                   task.status === "OPEN" && new Date(task.deadline) < now;
                 const isAssignee = task.assigneeId === user.id;
                 const isRecurring = !!task.recurringTaskId;
+                const isCompleted = task.status === "COMPLETED";
+                const isCompleting = completingTaskId === task.id;
 
                 return (
                   <Card
@@ -409,59 +436,80 @@ export function TasksModule({ user }: Props) {
                     className={
                       isOverdue
                         ? "border-destructive/40"
-                        : task.status === "COMPLETED"
+                        : isCompleted
                         ? "opacity-70"
                         : ""
                     }
                   >
                     <CardContent className="pt-4">
-                      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                      <div className="flex items-start gap-3">
+                        {/* Checkbox */}
+                        <button
+                          onClick={() => {
+                            if (isCompleted) return;
+                            if (isCompleting) {
+                              setCompletingTaskId(null);
+                              setTaskDriveLink("");
+                            } else if (isAssignee || isTL) {
+                              if (isTL) {
+                                // Admin can complete directly
+                                handleComplete(task.id, taskDriveLink || "admin");
+                              } else {
+                                setCompletingTaskId(task.id);
+                                setTaskDriveLink(task.driveLink || "");
+                              }
+                            }
+                          }}
+                          className="mt-0.5 flex-shrink-0"
+                          disabled={isCompleted || (!isAssignee && !isTL)}
+                        >
+                          {isCompleted ? (
+                            <CheckCircle2 className="w-5 h-5 text-primary" />
+                          ) : (
+                            <Circle className={`w-5 h-5 ${isAssignee || isTL ? "text-muted-foreground hover:text-primary cursor-pointer" : "text-muted-foreground/50"}`} />
+                          )}
+                        </button>
+
                         <div className="flex-1 min-w-0">
+                          {/* Badges */}
                           <div className="flex items-center gap-2 mb-2 flex-wrap">
                             {isOverdue && (
-                              <Badge
-                                variant="outline"
-                                className="border-destructive/40 text-destructive bg-destructive/5"
-                              >
+                              <Badge variant="outline" className="border-destructive/40 text-destructive bg-destructive/5">
                                 <AlertCircle className="w-3 h-3 ml-1" />
                                 {t("tasks.overdue")}
                               </Badge>
                             )}
                             {isRecurring && (
-                              <Badge
-                                variant="outline"
-                                className="border-primary/30 text-primary bg-primary/5"
-                              >
+                              <Badge variant="outline" className="border-primary/30 text-primary bg-primary/5">
                                 <Repeat className="w-3 h-3 ml-1" />
                                 {t("tasks.recurringBadge")}
                               </Badge>
                             )}
-                            <Badge
-                              variant="outline"
-                              className={PRIORITY_COLORS[task.priority]}
-                            >
+                            <Badge variant="outline" className={PRIORITY_COLORS[task.priority]}>
                               {priorityLabels[task.priority]}
                             </Badge>
-                            <Badge
-                              variant="outline"
-                              className={STATUS_COLORS[task.status]}
-                            >
+                            <Badge variant="outline" className={STATUS_COLORS[task.status]}>
                               {statusLabels[task.status]}
                             </Badge>
                           </div>
-                          <h3 className="font-semibold mb-1">{task.title}</h3>
+
+                          {/* Title + description */}
+                          <h3 className={`font-semibold mb-1 ${isCompleted ? "line-through text-muted-foreground" : ""}`}>
+                            {task.title}
+                          </h3>
                           <p className="text-sm text-muted-foreground mb-2 line-clamp-2 whitespace-pre-line">
                             {task.description}
                           </p>
-                          <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
+
+                          {/* Meta info */}
+                          <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap mb-2">
                             <span className="flex items-center gap-1">
                               <Clock className="w-3 h-3" />
                               {formatDateTime(task.deadline)}
                             </span>
                             {task.assignee && (
                               <span>
-                                {t("tasks.assignee")}:{" "}
-                                <strong>{task.assignee.name}</strong>
+                                {t("tasks.assignee")}: <strong>{task.assignee.name}</strong>
                               </span>
                             )}
                             {task.creator && (
@@ -470,38 +518,72 @@ export function TasksModule({ user }: Props) {
                               </span>
                             )}
                           </div>
-                        </div>
 
-                        <div className="flex flex-col gap-2 sm:items-end">
-                          {task.status === "OPEN" &&
-                            (isAssignee || isTL) && (
-                              <Button
-                                size="sm"
-                                onClick={() => handleComplete(task.id)}
-                                className="bg-primary text-primary-foreground hover:bg-primary/90"
-                              >
-                                <Check className="w-3.5 h-3.5 ml-1" />
-                                {t("tasks.complete")}
-                              </Button>
-                            )}
-                          {isTL && task.status === "OPEN" && (
-                            <Select
-                              value={task.assigneeId || ""}
-                              onValueChange={(v) => handleAssign(task.id, v)}
-                            >
-                              <SelectTrigger className="w-40 h-8 text-xs">
-                                <SelectValue
-                                  placeholder={t("tasks.reassign")}
+                          {/* Drive link input (when completing) */}
+                          {isCompleting && !isCompleted && (
+                            <div className="mt-3 p-3 rounded-md border border-primary/20 bg-primary/5">
+                              <Label className="text-xs font-medium flex items-center gap-1 mb-2">
+                                <Folder className="w-3.5 h-3.5" />
+                                {t("reports.driveLink.label")} *
+                              </Label>
+                              <div className="flex gap-2">
+                                <Input
+                                  type="url"
+                                  dir="ltr"
+                                  value={taskDriveLink}
+                                  onChange={(e) => setTaskDriveLink(e.target.value)}
+                                  placeholder={t("reports.driveLink.placeholder")}
+                                  className="text-sm h-9 flex-1"
                                 />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {team.map((m) => (
-                                  <SelectItem key={m.id} value={m.id}>
-                                    {m.name}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
+                                <Button
+                                  size="sm"
+                                  className="bg-primary text-primary-foreground hover:bg-primary/90 h-9 flex-shrink-0"
+                                  onClick={() => handleComplete(task.id, taskDriveLink)}
+                                >
+                                  <Check className="w-3.5 h-3.5 ml-1" />
+                                  {t("tasks.complete")}
+                                </Button>
+                              </div>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                {t("reports.driveLink.hint")}
+                              </p>
+                            </div>
+                          )}
+
+                          {/* Show Drive link if completed */}
+                          {isCompleted && task.driveLink && (
+                            <a
+                              href={task.driveLink}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                              dir="ltr"
+                            >
+                              <Folder className="w-3 h-3" />
+                              {t("reports.driveLink.view")}
+                              <ExternalLink className="w-3 h-3" />
+                            </a>
+                          )}
+
+                          {/* Admin: reassign dropdown */}
+                          {isTL && task.status === "OPEN" && (
+                            <div className="mt-2">
+                              <Select
+                                value={task.assigneeId || ""}
+                                onValueChange={(v) => handleAssign(task.id, v)}
+                              >
+                                <SelectTrigger className="w-40 h-8 text-xs">
+                                  <SelectValue placeholder={t("tasks.reassign")} />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {team.map((m) => (
+                                    <SelectItem key={m.id} value={m.id}>
+                                      {m.name}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
                           )}
                         </div>
                       </div>
