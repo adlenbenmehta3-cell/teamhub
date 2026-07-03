@@ -36,22 +36,22 @@ async function main() {
       password: storedPassword,
       role: "TEAM_LEADER",
       department: "GENERAL",
-      title: "Administrator",
+      title: "المدير",
     },
   });
 
-  // Create a welcome announcement
+  // Create a welcome announcement (Arabic only)
   await prisma.announcement
     .create({
       data: {
-        title: "مرحبًا بك Adlene | Welcome Adlene",
+        title: "مرحبًا بك في TeamHub",
         content:
-          "تم إعداد حساب الأدمن بنجاح.\n" +
-          "Admin account has been set up successfully.\n\n" +
-          "الخطوات التالية | Next steps:\n" +
-          "1. أضف أعضاء فريقك من 'إدارة الفريق' | Add team members from 'Team Management'\n" +
-          "2. أنشئ المهام ووزعها | Create and assign tasks\n" +
-          "3. شارك الإعلانات مع الفريق | Share announcements",
+          "تم إعداد حساب الأدمن بنجاح.\n\n" +
+          "الخطوات التالية:\n" +
+          "1. أضف أعضاء فريقك من صفحة 'إدارة الفريق'\n" +
+          "2. أنشئ المهام ووزعها على الأعضاء\n" +
+          "3. شارك الإعلانات مع الفريق\n" +
+          "4. تابع الحضور والتقارير اليومية",
         pinned: true,
         creatorId: admin.id,
       },

@@ -388,14 +388,14 @@ export function ReportsModule({ user }: Props) {
  className="border-border text-primary bg-muted/50"
  >
  <CheckCircle2 className="w-3 h-3 ml-1" />
- {t("reports.submitted")}
+ {t("reports.submittedBadge")}
  </Badge>
  ): (
  <Badge
  variant="outline"
  className="border-border text-primary bg-muted/50"
  >
- {t("reports.pending")}
+ {t("reports.pendingBadge")}
  </Badge>
  )}
  </div>

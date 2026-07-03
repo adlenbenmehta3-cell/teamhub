@@ -17,13 +17,13 @@ export function LanguageSwitcher() {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button
-          variant="ghost"
+          variant="outline"
           size="sm"
-          className="gap-2 h-9 px-2 text-foreground hover:bg-accent"
+          className="gap-2 h-9 px-3 text-foreground border-border hover:bg-accent"
         >
           <Languages className="w-4 h-4" />
-          <span className="text-xs font-medium uppercase">
-            {lang === "ar" ? "ع" : "EN"}
+          <span className="text-xs font-medium">
+            {lang === "ar" ? "العربية" : "English"}
           </span>
         </Button>
       </DropdownMenuTrigger>
