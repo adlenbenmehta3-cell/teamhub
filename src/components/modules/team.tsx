@@ -38,6 +38,7 @@ import {
   Briefcase,
   Trophy,
   Edit2,
+  Shield,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useLanguage } from "@/components/language-provider";
@@ -209,6 +210,16 @@ export function TeamModule({ user }: Props) {
 
   return (
     <div className="space-y-6">
+      {/* Admin-only notice */}
+      <div className="p-3 rounded-lg bg-amber-50 border border-amber-200 flex items-start gap-2">
+        <Shield className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
+        <p className="text-xs text-amber-800">
+          {lang === "ar"
+            ? "هذه الصفحة مخصصة للأدمن فقط. أنت الوحيد الذي يمكنه إنشاء وتعديل وحذف حسابات العمال. لا يوجد تسجيل ذاتي للعمال."
+            : "This page is admin-only. Only you can create, edit, and delete worker accounts. Workers cannot self-register."}
+        </p>
+      </div>
+
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl lg:text-3xl font-bold text-emerald-900">
