@@ -3,16 +3,71 @@ import { db, ensureSchemaUpToDate } from "@/lib/db";
 import { getCurrentUser, isTeamLeader } from "@/lib/auth";
 
 /**
- * GET /api/review/today
- * Returns ALL Drive links submitted today by all workers, in one place.
- * This is the admin's central review dashboard.
+ * GET /api/review/today?date=YYYY-MM-DD
  *
- * Returns:
- *  - reportLinks: Drive links from daily reports submitted today
- *  - workPlanLinks: Drive links from work plan checklist items completed today
- *  - summary: counts and stats
+ * Returns ALL review data grouped BY WORKER, for easy browsing.
+ * For each worker, returns:
+ *   - Worker info (name, title, department)
+ *   - All assigned tasks due today or earlier (completed + uncompleted)
+ *   - All work plan checklist items for the date (completed + uncompleted)
+ *   - Daily report (if submitted) with Drive link
+ *
+ * Admin can click any worker to expand their full task breakdown.
  */
-export async function GET() {
+
+interface WorkerData {
+  id: string;
+  name: string;
+  title: string | null;
+  department: string;
+  // Tasks (one-time + recurring instances)
+  tasks: {
+    id: string;
+    title: string;
+    description: string;
+    deadline: string;
+    priority: string;
+    status: string;
+    completed: boolean;
+    driveLink: string | null;
+    completedAt: string | null;
+    isRecurring: boolean;
+    isOverdue: boolean;
+  }[];
+  // Work plan checklist items for the date
+  workPlanItems: {
+    id: string;
+    title: string;
+    description: string | null;
+    workPlanTitle: string;
+    completed: boolean;
+    driveLink: string | null;
+    completedAt: string | null;
+  }[];
+  // Daily report
+  report: {
+    id: string;
+    completed: string;
+    inProgress: string;
+    blockers: string;
+    tomorrow: string;
+    driveLink: string | null;
+    submittedAt: string;
+  } | null;
+  // Summary
+  summary: {
+    totalTasks: number;
+    completedTasks: number;
+    uncompletedTasks: number;
+    overdueTasks: number;
+    totalWorkPlanItems: number;
+    completedWorkPlanItems: number;
+    hasReport: boolean;
+    hasDriveLinks: boolean;
+  };
+}
+
+export async function GET(req: Request) {
   try {
     await ensureSchemaUpToDate();
     const user = await getCurrentUser();
@@ -23,131 +78,187 @@ export async function GET() {
       );
     }
 
-    const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
+    const { searchParams } = new URL(req.url);
+    const date =
+      searchParams.get("date") || new Date().toISOString().split("T")[0];
 
-    // 1. Get today's reports with Drive links
-    const reports = await db.report.findMany({
-      where: {
-        date: today,
-        driveLink: { not: null },
-      },
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            title: true,
-            department: true,
-          },
-        },
-      },
-      orderBy: { createdAt: "desc" },
-    });
-
-    const reportLinks = reports.map((r) => ({
-      type: "report",
-      id: r.id,
-      workerName: r.user.name,
-      workerTitle: r.user.title,
-      department: r.user.department,
-      driveLink: r.driveLink,
-      completed: r.completed,
-      inProgress: r.inProgress,
-      submittedAt: r.createdAt,
-    }));
-
-    // 2. Get today's work plan completions with Drive links
-    const completions = await db.dailyCompletion.findMany({
-      where: {
-        date: today,
-        driveLink: { not: null },
-      },
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            title: true,
-            department: true,
-          },
-        },
-        workPlanItem: {
-          include: {
-            workPlan: {
-              select: { id: true, title: true },
-            },
-          },
-        },
-      },
-      orderBy: { completedAt: "desc" },
-    });
-
-    const workPlanLinks = completions.map((c) => ({
-      type: "workplan",
-      id: c.id,
-      workerName: c.user.name,
-      workerTitle: c.user.title,
-      department: c.user.department,
-      driveLink: c.driveLink,
-      taskTitle: c.workPlanItem.title,
-      taskDescription: c.workPlanItem.description,
-      workPlanTitle: c.workPlanItem.workPlan.title,
-      completedAt: c.completedAt,
-    }));
-
-    // 3. Get today's completed tasks with Drive links
-    const startOfDay = new Date(today + "T00:00:00.000Z");
-    const endOfDay = new Date(today + "T23:59:59.999Z");
-    const completedTasks = await db.task.findMany({
-      where: {
-        status: "COMPLETED",
-        driveLink: { not: null },
-        completedAt: { gte: startOfDay, lte: endOfDay },
-      },
-      include: {
-        assignee: {
-          select: { id: true, name: true, title: true, department: true },
-        },
-      },
-      orderBy: { completedAt: "desc" },
-    });
-
-    const taskLinks = completedTasks.map((t) => ({
-      type: "task",
-      id: t.id,
-      workerName: t.assignee?.name || "—",
-      workerTitle: t.assignee?.title || null,
-      department: t.assignee?.department || "GENERAL",
-      driveLink: t.driveLink,
-      taskTitle: t.title,
-      taskDescription: t.description,
-      completedAt: t.completedAt,
-    }));
-
-    // 4. Summary
-    const allWorkers = await db.user.count({
+    // Get all active workers (non-admin)
+    const workers = await db.user.findMany({
       where: { active: true, role: { not: "TEAM_LEADER" } },
+      select: {
+        id: true,
+        name: true,
+        title: true,
+        department: true,
+      },
+      orderBy: { name: "asc" },
     });
 
-    const allWorkersWithLinks = new Set([
-      ...reportLinks.map((r) => r.workerName),
-      ...workPlanLinks.map((r) => r.workerName),
-      ...taskLinks.map((r) => r.workerName),
-    ]).size;
+    // Get the date range (start of day to end of day)
+    const dayStart = new Date(date + "T00:00:00.000Z");
+    const dayEnd = new Date(date + "T23:59:59.999Z");
+    const now = new Date();
+
+    // For each worker, gather their data
+    const workersData: WorkerData[] = [];
+
+    for (const worker of workers) {
+      // 1. Get tasks: all tasks due today or earlier (uncompleted) + completed today
+      const tasks = await db.task.findMany({
+        where: {
+          assigneeId: worker.id,
+          OR: [
+            // Uncompleted tasks due today or earlier (still visible)
+            {
+              status: "OPEN",
+              deadline: { lte: dayEnd },
+            },
+            // Tasks completed today
+            {
+              status: "COMPLETED",
+              completedAt: { gte: dayStart, lte: dayEnd },
+            },
+          ],
+        },
+        include: {
+          recurringTask: { select: { id: true } },
+        },
+        orderBy: [{ deadline: "asc" }],
+      });
+
+      const tasksData = tasks.map((t) => ({
+        id: t.id,
+        title: t.title,
+        description: t.description,
+        deadline: t.deadline.toISOString(),
+        priority: t.priority,
+        status: t.status,
+        completed: t.status === "COMPLETED",
+        driveLink: t.driveLink,
+        completedAt: t.completedAt?.toISOString() || null,
+        isRecurring: !!t.recurringTaskId,
+        isOverdue: t.status === "OPEN" && t.deadline < now,
+      }));
+
+      // 2. Get work plan checklist items for this date
+      const workPlans = await db.workPlan.findMany({
+        where: {
+          active: true,
+          assigneeId: worker.id,
+          startDate: { lte: dayEnd },
+          endDate: { gte: dayStart },
+        },
+        include: {
+          items: { orderBy: { order: "asc" } },
+        },
+      });
+
+      // Get completions for this worker on this date
+      const completions = await db.dailyCompletion.findMany({
+        where: {
+          userId: worker.id,
+          date,
+        },
+      });
+      const completionMap = new Map(
+        completions.map((c) => [c.workPlanItemId, c])
+      );
+
+      const workPlanItemsData: WorkerData["workPlanItems"] = [];
+      for (const wp of workPlans) {
+        for (const item of wp.items) {
+          const completion = completionMap.get(item.id);
+          workPlanItemsData.push({
+            id: item.id,
+            title: item.title,
+            description: item.description,
+            workPlanTitle: wp.title,
+            completed: completion?.completed || false,
+            driveLink: completion?.driveLink || null,
+            completedAt: completion?.completedAt?.toISOString() || null,
+          });
+        }
+      }
+
+      // 3. Get daily report
+      const report = await db.report.findUnique({
+        where: {
+          userId_date: { userId: worker.id, date },
+        },
+      });
+
+      const reportData = report
+        ? {
+            id: report.id,
+            completed: report.completed,
+            inProgress: report.inProgress,
+            blockers: report.blockers,
+            tomorrow: report.tomorrow,
+            driveLink: report.driveLink,
+            submittedAt: report.createdAt.toISOString(),
+          }
+        : null;
+
+      // 4. Summary
+      const completedTasks = tasksData.filter((t) => t.completed).length;
+      const overdueTasks = tasksData.filter((t) => t.isOverdue).length;
+      const completedWorkPlanItems = workPlanItemsData.filter(
+        (i) => i.completed
+      ).length;
+      const hasDriveLinks =
+        tasksData.some((t) => t.driveLink) ||
+        workPlanItemsData.some((i) => i.driveLink) ||
+        !!reportData?.driveLink;
+
+      workersData.push({
+        ...worker,
+        tasks: tasksData,
+        workPlanItems: workPlanItemsData,
+        report: reportData,
+        summary: {
+          totalTasks: tasksData.length,
+          completedTasks,
+          uncompletedTasks: tasksData.length - completedTasks,
+          overdueTasks,
+          totalWorkPlanItems: workPlanItemsData.length,
+          completedWorkPlanItems,
+          hasReport: !!reportData,
+          hasDriveLinks,
+        },
+      });
+    }
+
+    // Overall summary
+    const totalWorkers = workersData.length;
+    const workersWithActivity = workersData.filter(
+      (w) =>
+        w.summary.totalTasks > 0 ||
+        w.summary.totalWorkPlanItems > 0 ||
+        w.summary.hasReport
+    ).length;
+    const totalDriveLinks = workersData.filter((w) =>
+      w.summary.hasDriveLinks
+    ).length;
 
     return NextResponse.json({
-      date: today,
-      reportLinks,
-      workPlanLinks,
-      taskLinks,
+      date,
+      workers: workersData,
       summary: {
-        totalWorkers: allWorkers,
-        workersSubmittedLinks: allWorkersWithLinks,
-        workersNotSubmitted: allWorkers - allWorkersWithLinks,
-        totalReportLinks: reportLinks.length,
-        totalWorkPlanLinks: workPlanLinks.length,
-        totalTaskLinks: taskLinks.length,
-        totalLinks: reportLinks.length + workPlanLinks.length + taskLinks.length,
+        totalWorkers,
+        workersWithActivity,
+        workersWithDriveLinks: totalDriveLinks,
+        totalTasks: workersData.reduce(
+          (sum, w) => sum + w.summary.totalTasks,
+          0
+        ),
+        totalCompletedTasks: workersData.reduce(
+          (sum, w) => sum + w.summary.completedTasks,
+          0
+        ),
+        totalOverdueTasks: workersData.reduce(
+          (sum, w) => sum + w.summary.overdueTasks,
+          0
+        ),
       },
     });
   } catch (e) {
