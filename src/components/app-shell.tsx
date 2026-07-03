@@ -243,7 +243,7 @@ function SidebarContent({
           </div>
           <div>
             <h1 className="font-bold text-sidebar-foreground text-lg leading-tight">
-              TeamHub
+              Innov8 Brands
             </h1>
             <p className="text-xs text-muted-foreground">
               {lang === "ar" ? "إدارة العلامة التجارية" : "Brand Management Hub"}
