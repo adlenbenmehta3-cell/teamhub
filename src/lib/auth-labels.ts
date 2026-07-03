@@ -50,25 +50,25 @@ export const KB_CATEGORY_LABELS: Record<string, string> = {
 };
 
 export const ROLE_COLORS: Record<string, string> = {
-  TEAM_LEADER: "bg-emerald-100 text-emerald-700 border-emerald-200",
-  SENIOR_MARKETER: "bg-teal-100 text-teal-700 border-teal-200",
-  MARKETING_SPECIALIST: "bg-amber-100 text-amber-700 border-amber-200",
-  JUNIOR_MARKETER: "bg-slate-100 text-slate-700 border-slate-200",
-  GUEST: "bg-fuchsia-100 text-fuchsia-700 border-fuchsia-200",
+  TEAM_LEADER: "bg-primary/10 text-primary border-primary/30",
+  SENIOR_MARKETER: "bg-muted text-foreground border-border",
+  MARKETING_SPECIALIST: "bg-muted text-foreground border-border",
+  JUNIOR_MARKETER: "bg-muted text-muted-foreground border-border",
+  GUEST: "bg-muted text-muted-foreground border-border",
 };
 
 export const PRIORITY_COLORS: Record<string, string> = {
-  LOW: "bg-slate-100 text-slate-700 border-slate-200",
-  MEDIUM: "bg-blue-100 text-blue-700 border-blue-200",
-  HIGH: "bg-amber-100 text-amber-700 border-amber-200",
-  URGENT: "bg-red-100 text-red-700 border-red-200",
+  LOW: "bg-muted text-muted-foreground border-border",
+  MEDIUM: "bg-muted text-foreground border-border",
+  HIGH: "bg-primary/10 text-primary border-primary/30",
+  URGENT: "bg-destructive/10 text-destructive border-destructive/30",
 };
 
 export const STATUS_COLORS: Record<string, string> = {
-  OPEN: "bg-blue-100 text-blue-700 border-blue-200",
-  IN_PROGRESS: "bg-amber-100 text-amber-700 border-amber-200",
-  COMPLETED: "bg-emerald-100 text-emerald-700 border-emerald-200",
-  CANCELLED: "bg-slate-100 text-slate-500 border-slate-200",
+  OPEN: "bg-primary/10 text-primary border-primary/30",
+  IN_PROGRESS: "bg-muted text-foreground border-border",
+  COMPLETED: "bg-muted text-muted-foreground border-border",
+  CANCELLED: "bg-muted text-muted-foreground border-border",
 };
 
 // Helper to format date in Arabic

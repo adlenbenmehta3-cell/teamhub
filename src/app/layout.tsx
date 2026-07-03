@@ -1,26 +1,16 @@
 import type { Metadata } from "next";
-import { Cairo, Tajawal, Inter } from "next/font/google";
+import { Poppins } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as SonnerToaster } from "@/components/ui/sonner";
 import { LanguageProvider } from "@/components/language-provider";
+import { ThemeProvider } from "@/components/theme-provider";
 
-const cairo = Cairo({
-  variable: "--font-cairo",
-  subsets: ["arabic", "latin"],
-  weight: ["300", "400", "500", "600", "700", "800", "900"],
-});
-
-const tajawal = Tajawal({
-  variable: "--font-tajawal",
-  subsets: ["arabic", "latin"],
-  weight: ["300", "400", "500", "700", "800", "900"],
-});
-
-const inter = Inter({
-  variable: "--font-inter",
-  subsets: ["latin"],
+const poppins = Poppins({
+  variable: "--font-poppins",
+  subsets: ["latin", "latin-ext"],
   weight: ["300", "400", "500", "600", "700", "800"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -39,13 +29,20 @@ export default function RootLayout({
   return (
     <html lang="ar" dir="rtl" suppressHydrationWarning>
       <body
-        className={`${cairo.variable} ${tajawal.variable} ${inter.variable} antialiased bg-background text-foreground font-tajawal`}
+        className={`${poppins.variable} antialiased bg-background text-foreground font-sans`}
       >
-        <LanguageProvider>
-          {children}
-          <Toaster />
-          <SonnerToaster position="top-center" richColors />
-        </LanguageProvider>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="light"
+          enableSystem={false}
+          disableTransitionOnChange
+        >
+          <LanguageProvider>
+            {children}
+            <Toaster />
+            <SonnerToaster position="top-center" richColors />
+          </LanguageProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

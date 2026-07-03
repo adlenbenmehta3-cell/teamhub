@@ -19,10 +19,10 @@ export function LanguageSwitcher() {
         <Button
           variant="ghost"
           size="sm"
-          className="gap-2 text-emerald-700 hover:bg-emerald-50"
+          className="gap-2 h-9 px-2 text-foreground hover:bg-accent"
         >
           <Languages className="w-4 h-4" />
-          <span className="text-xs font-medium">
+          <span className="text-xs font-medium uppercase">
             {lang === "ar" ? "ع" : "EN"}
           </span>
         </Button>
@@ -35,7 +35,7 @@ export function LanguageSwitcher() {
             className="flex items-center gap-2 cursor-pointer"
           >
             <span className="flex-1">{l.label}</span>
-            {lang === l.code && <Check className="w-4 h-4 text-emerald-600" />}
+            {lang === l.code && <Check className="w-4 h-4 text-primary" />}
           </DropdownMenuItem>
         ))}
       </DropdownMenuContent>

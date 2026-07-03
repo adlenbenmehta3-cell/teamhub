@@ -61,10 +61,10 @@ export default function Home() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-emerald-50 via-white to-teal-50">
+      <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-3">
-          <div className="w-12 h-12 rounded-full border-4 border-emerald-200 border-t-emerald-600 animate-spin" />
-          <p className="text-emerald-700 text-sm font-medium">
+          <div className="w-10 h-10 rounded-full border-2 border-border border-t-primary animate-spin" />
+          <p className="text-muted-foreground text-sm font-medium">
             {t("app.loading")}
           </p>
         </div>
