@@ -31,6 +31,13 @@ export const TASK_STATUS_LABELS: Record<string, string> = {
   CANCELLED: "ملغاة",
 };
 
+export const RECURRENCE_PATTERN_LABELS: Record<string, string> = {
+  DAILY: "يومي",
+  WEEKLY: "أسبوعي",
+  MONTHLY: "شهري",
+  WEEKDAYS: "أيام العمل",
+};
+
 export const MEETING_TYPE_LABELS: Record<string, string> = {
   STANDUP: "اجتماع يومي",
   WEEKLY: "اجتماع أسبوعي",

@@ -15,6 +15,9 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "غير مصرح" }, { status: 401 });
     }
 
+    // Auto-generate any pending recurring task instances (fire and forget)
+    generateRecurringTasksInBackground().catch(() => {});
+
     const { searchParams } = new URL(req.url);
     const status = searchParams.get("status") || "open";
     const assigneeId = searchParams.get("assignee");
@@ -44,6 +47,115 @@ export async function GET(req: NextRequest) {
       { error: "حدث خطأ أثناء جلب المهام" },
       { status: 500 }
     );
+  }
+}
+
+/**
+ * Background generation of recurring task instances.
+ * Fire-and-forget — does not block the response.
+ */
+async function generateRecurringTasksInBackground() {
+  try {
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+
+    const activeRecurring = await db.recurringTask.findMany({
+      where: {
+        active: true,
+        endDate: { gte: now },
+      },
+    });
+
+    for (const rt of activeRecurring) {
+      await generateForRecurringTask(rt);
+    }
+  } catch (e) {
+    // Silent fail — this is background work
+    console.error("Background recurring generation error:", e);
+  }
+}
+
+async function generateForRecurringTask(recurringTask: any): Promise<void> {
+  const start = new Date(recurringTask.startDate);
+  const end = new Date(recurringTask.endDate);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  let rangeStart = new Date(today);
+  if (start > rangeStart) rangeStart = new Date(start);
+
+  if (recurringTask.lastGenerated) {
+    const lastGen = new Date(recurringTask.lastGenerated);
+    lastGen.setDate(lastGen.getDate() + 1);
+    lastGen.setHours(0, 0, 0, 0);
+    if (lastGen > rangeStart) rangeStart = lastGen;
+  }
+
+  const dates: Date[] = [];
+  const cursor = new Date(rangeStart);
+  cursor.setHours(0, 0, 0, 0);
+
+  while (cursor <= end) {
+    if (shouldGenerateForDate(cursor, recurringTask.pattern)) {
+      const deadline = new Date(cursor);
+      deadline.setHours(23, 59, 0, 0);
+      dates.push(deadline);
+    }
+    cursor.setDate(cursor.getDate() + 1);
+  }
+
+  if (dates.length === 0) return;
+
+  const existing = await db.task.findMany({
+    where: {
+      recurringTaskId: recurringTask.id,
+      deadline: { in: dates },
+    },
+    select: { deadline: true },
+  });
+  const existingSet = new Set(existing.map((t) => t.deadline.toISOString()));
+  const newDates = dates.filter((d) => !existingSet.has(d.toISOString()));
+
+  if (newDates.length === 0) {
+    await db.recurringTask.update({
+      where: { id: recurringTask.id },
+      data: { lastGenerated: new Date() },
+    });
+    return;
+  }
+
+  await db.task.createMany({
+    data: newDates.map((deadline) => ({
+      title: recurringTask.title,
+      description: recurringTask.description,
+      deadline,
+      priority: recurringTask.priority,
+      status: "OPEN",
+      assigneeId: recurringTask.assigneeId,
+      creatorId: recurringTask.creatorId,
+      recurringTaskId: recurringTask.id,
+    })),
+  });
+
+  await db.recurringTask.update({
+    where: { id: recurringTask.id },
+    data: { lastGenerated: new Date() },
+  });
+}
+
+function shouldGenerateForDate(date: Date, pattern: string): boolean {
+  const dayOfWeek = date.getDay();
+  switch (pattern) {
+    case "DAILY":
+      return true;
+    case "WEEKLY":
+      return dayOfWeek === 1;
+    case "MONTHLY":
+      return date.getDate() === 1;
+    case "WEEKDAYS":
+      return dayOfWeek >= 1 && dayOfWeek <= 5;
+    default:
+      return true;
   }
 }
 
