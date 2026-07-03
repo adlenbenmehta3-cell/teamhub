@@ -31,13 +31,14 @@ export async function GET(req: NextRequest) {
     if (assigneeId) {
       where.assigneeId = assigneeId;
     }
-    // Filter to show only tasks due today
+    // Filter: show tasks due today AND any overdue uncompleted tasks
+    // Uncompleted tasks from previous days stay visible until completed
     if (todayOnly) {
-      const startOfDay = new Date();
-      startOfDay.setHours(0, 0, 0, 0);
       const endOfDay = new Date();
       endOfDay.setHours(23, 59, 59, 999);
-      where.deadline = { gte: startOfDay, lte: endOfDay };
+      where.deadline = { lte: endOfDay };
+      // Only show OPEN (uncompleted) tasks — completed ones are hidden
+      where.status = "OPEN";
     }
 
     const tasks = await db.task.findMany({

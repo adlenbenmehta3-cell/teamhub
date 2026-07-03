@@ -397,7 +397,7 @@ export function TasksModule({ user }: Props) {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="today">{lang === "ar" ? "اليوم" : "Today"}</SelectItem>
+                <SelectItem value="today">{lang === "ar" ? "المهام الحالية" : "Current Tasks"}</SelectItem>
                 <SelectItem value="open">{t("tasks.open")}</SelectItem>
                 <SelectItem value="completed">
                   {t("tasks.completed")}
@@ -412,7 +412,11 @@ export function TasksModule({ user }: Props) {
               <CardContent className="py-12 text-center">
                 <CheckSquare className="w-12 h-12 text-muted-foreground/30 mx-auto mb-3" />
                 <p className="text-muted-foreground">
-                  {filter === "open"
+                  {filter === "today"
+                    ? (lang === "ar"
+                        ? "لا توجد مهام حالية — كل مهامك مكتملة!"
+                        : "No current tasks — all your tasks are completed!")
+                    : filter === "open"
                     ? t("tasks.noOpenTasks")
                     : filter === "completed"
                     ? t("tasks.noCompletedTasks")
