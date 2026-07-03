@@ -1,4 +1,4 @@
-# TeamHub — Marketing Team Management Platform
+# Innov8 Brands — Brand Management Platform
 
 منصة متكاملة لإدارة فريق التسويق | Complete marketing team management platform
 

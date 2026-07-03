@@ -44,7 +44,7 @@ async function main() {
   await prisma.announcement
     .create({
       data: {
-        title: "مرحبًا بك في TeamHub",
+        title: "مرحبًا بك في Innov8 Brands",
         content:
           "تم إعداد حساب الأدمن بنجاح.\n\n" +
           "الخطوات التالية:\n" +

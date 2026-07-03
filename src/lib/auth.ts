@@ -1,5 +1,5 @@
 /**
- * Authentication utilities for TeamHub.
+ * Authentication utilities for Innov8 Brands.
  * Simple session-based auth with HTTP-only cookies.
  * Passwords are hashed with Web Crypto API (SHA-256 + salt).
  */
