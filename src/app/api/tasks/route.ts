@@ -145,6 +145,7 @@ async function generateForRecurringTask(recurringTask: any): Promise<void> {
       assigneeId: recurringTask.assigneeId,
       creatorId: recurringTask.creatorId,
       recurringTaskId: recurringTask.id,
+      requiresDriveLink: recurringTask.requiresDriveLink,
     })),
   });
 
@@ -189,7 +190,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { title, description, deadline, priority, assigneeId } = body;
+    const { title, description, deadline, priority, assigneeId, requiresDriveLink } = body;
 
     if (!title || !description || !deadline) {
       return NextResponse.json(
@@ -207,6 +208,7 @@ export async function POST(req: NextRequest) {
         assigneeId: assigneeId || null,
         creatorId: user.id,
         status: "OPEN",
+        requiresDriveLink: requiresDriveLink !== undefined ? requiresDriveLink : true,
       },
       include: {
         assignee: { select: { id: true, name: true, department: true } },

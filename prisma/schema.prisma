@@ -136,7 +136,8 @@ model Task {
   assigneeId       String?
   creatorId        String
   completionNotes  String?
-  driveLink        String?  // Google Drive link with the work (required for completion)
+  driveLink        String?  // Google Drive link with the work
+  requiresDriveLink Boolean @default(true) // Admin can set false for non-Drive tasks
   createdAt        DateTime     @default(now())
   updatedAt        DateTime     @updatedAt
   completedAt      DateTime?
@@ -160,19 +161,20 @@ model Task {
 // ============================================================
 
 model RecurringTask {
-  id              String            @id @default(cuid())
-  title           String
-  description     String
-  priority        TaskPriority      @default(MEDIUM)
-  pattern         RecurrencePattern @default(DAILY)
-  startDate       DateTime
-  endDate         DateTime          // Last day to generate instances
-  assigneeId      String?
-  creatorId       String
-  active          Boolean           @default(true)
-  lastGenerated   DateTime?         // Track last instance creation
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
+  id                String            @id @default(cuid())
+  title             String
+  description       String
+  priority          TaskPriority      @default(MEDIUM)
+  pattern           RecurrencePattern @default(DAILY)
+  startDate         DateTime
+  endDate           DateTime          // Last day to generate instances
+  assigneeId        String?
+  creatorId         String
+  active            Boolean           @default(true)
+  requiresDriveLink Boolean           @default(true)
+  lastGenerated     DateTime?         // Track last instance creation
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
 
   tasks           Task[]
   assignee        User?             @relation("RecurringTaskAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)

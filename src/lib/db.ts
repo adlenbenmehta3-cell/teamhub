@@ -127,8 +127,8 @@ export async function ensureSchemaUpToDate() {
   if (globalForPrisma.schemaMigrated) return;
 
   try {
-    // Try a query that requires the latest schema (driveLink on Task table)
-    await db.task.findFirst({ where: { driveLink: { not: null } }, select: { id: true } });
+    // Try a query that requires the latest schema (requiresDriveLink on Task)
+    await db.task.findFirst({ where: { requiresDriveLink: true }, select: { id: true } });
     globalForPrisma.schemaMigrated = true;
   } catch (e) {
     // Schema is outdated — run prisma db push

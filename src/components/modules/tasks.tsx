@@ -20,6 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import {
   Dialog,
   DialogContent,
@@ -89,6 +90,7 @@ export function TasksModule({ user }: Props) {
   const [deadline, setDeadline] = useState("");
   const [priority, setPriority] = useState("MEDIUM");
   const [assigneeId, setAssigneeId] = useState("");
+  const [requiresDriveLink, setRequiresDriveLink] = useState(true);
 
   // Recurring task form
   const [rTitle, setRTitle] = useState("");
@@ -98,6 +100,7 @@ export function TasksModule({ user }: Props) {
   const [rStartDate, setRStartDate] = useState("");
   const [rEndDate, setREndDate] = useState("");
   const [rAssigneeId, setRAssigneeId] = useState("");
+  const [rRequiresDriveLink, setRRequiresDriveLink] = useState(true);
 
   const priorityLabels: Record<string, string> = {
     LOW: t("tasks.priority.low"),
@@ -162,6 +165,7 @@ export function TasksModule({ user }: Props) {
     setDeadline("");
     setPriority("MEDIUM");
     setAssigneeId("");
+    setRequiresDriveLink(true);
   };
 
   const resetRecurringForm = () => {
@@ -171,6 +175,7 @@ export function TasksModule({ user }: Props) {
     setRPattern("DAILY");
     setRStartDate("");
     setREndDate("");
+    setRRequiresDriveLink(true);
     setRAssigneeId("");
   };
 
@@ -190,6 +195,7 @@ export function TasksModule({ user }: Props) {
           deadline: new Date(deadline).toISOString(),
           priority,
           assigneeId: assigneeId || undefined,
+          requiresDriveLink,
         }),
       });
       const data = await res.json();
@@ -224,6 +230,7 @@ export function TasksModule({ user }: Props) {
           startDate: new Date(rStartDate).toISOString(),
           endDate: new Date(rEndDate).toISOString(),
           assigneeId: rAssigneeId || undefined,
+          requiresDriveLink: rRequiresDriveLink,
         }),
       });
       const data = await res.json();
@@ -473,10 +480,11 @@ export function TasksModule({ user }: Props) {
                               setCompletingTaskId(null);
                               setTaskDriveLink("");
                             } else if (isAssignee || isTL) {
-                              if (isTL) {
-                                // Admin can complete directly
-                                handleComplete(task.id, taskDriveLink || "admin");
+                              if (isTL || !task.requiresDriveLink) {
+                                // Admin OR task doesn't require Drive link → complete directly
+                                handleComplete(task.id, taskDriveLink || (task.requiresDriveLink ? "admin" : ""));
                               } else {
+                                // Worker on a Drive-link-required task → show Drive input
                                 setCompletingTaskId(task.id);
                                 setTaskDriveLink(task.driveLink || "");
                               }
@@ -814,6 +822,25 @@ export function TasksModule({ user }: Props) {
                 </SelectContent>
               </Select>
             </div>
+
+            {/* Requires Drive Link toggle */}
+            <div className="flex items-center justify-between p-3 rounded-md border border-border">
+              <div>
+                <Label className="text-sm font-medium cursor-pointer">
+                  {lang === "ar" ? "إلزامي رابط Google Drive" : "Require Google Drive Link"}
+                </Label>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {lang === "ar"
+                    ? "إذا مفعّل، يجب على العامل وضع رابط Drive قبل إتمام المهمة"
+                    : "If on, worker must add a Drive link before completing"}
+                </p>
+              </div>
+              <Switch
+                checked={requiresDriveLink}
+                onCheckedChange={setRequiresDriveLink}
+              />
+            </div>
+
             <DialogFooter>
               <Button
                 type="button"
@@ -971,6 +998,24 @@ export function TasksModule({ user }: Props) {
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+
+            {/* Requires Drive Link toggle */}
+            <div className="flex items-center justify-between p-3 rounded-md border border-border">
+              <div>
+                <Label className="text-sm font-medium cursor-pointer">
+                  {lang === "ar" ? "إلزامي رابط Google Drive" : "Require Google Drive Link"}
+                </Label>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {lang === "ar"
+                    ? "إذا مفعّل، يجب على العامل وضع رابط Drive قبل إتمام المهمة"
+                    : "If on, worker must add a Drive link before completing"}
+                </p>
+              </div>
+              <Switch
+                checked={rRequiresDriveLink}
+                onCheckedChange={setRRequiresDriveLink}
+              />
             </div>
 
             <DialogFooter>

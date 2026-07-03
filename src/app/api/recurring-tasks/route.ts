@@ -65,6 +65,7 @@ export async function POST(req: NextRequest) {
       startDate,
       endDate,
       assigneeId,
+      requiresDriveLink,
     } = body;
 
     if (!title || !description || !startDate || !endDate || !pattern) {
@@ -102,6 +103,7 @@ export async function POST(req: NextRequest) {
         endDate: end,
         assigneeId: assigneeId || null,
         creatorId: user.id,
+        requiresDriveLink: requiresDriveLink !== undefined ? requiresDriveLink : true,
       },
       include: {
         assignee: { select: { id: true, name: true, department: true } },
@@ -184,6 +186,7 @@ async function generateTaskInstances(recurringTask: any): Promise<number> {
       assigneeId: recurringTask.assigneeId,
       creatorId: recurringTask.creatorId,
       recurringTaskId: recurringTask.id,
+      requiresDriveLink: recurringTask.requiresDriveLink,
     })),
   });
 

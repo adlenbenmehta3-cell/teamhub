@@ -44,9 +44,9 @@ export async function PATCH(
         );
       }
 
-      // Workers must provide a Google Drive link to complete a task
+      // Workers must provide a Google Drive link ONLY if the task requires it
       const driveLink = body.driveLink?.trim();
-      if (!isTeamLeader(user.role) && !driveLink) {
+      if (!isTeamLeader(user.role) && task.requiresDriveLink && !driveLink) {
         return NextResponse.json(
           { error: "يجب إضافة رابط Google Drive قبل إتمام المهمة" },
           { status: 400 }
