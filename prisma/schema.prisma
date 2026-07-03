@@ -1,0 +1,281 @@
+// Prisma schema for TeamHub — Marketing Team Management
+// All models use SQLite-compatible types
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================
+// User & Auth
+// ============================================================
+
+enum Role {
+  TEAM_LEADER
+  SENIOR_MARKETER
+  MARKETING_SPECIALIST
+  JUNIOR_MARKETER
+  GUEST
+}
+
+enum Department {
+  SOCIAL_MEDIA
+  CONTENT_CREATION
+  SEO_ANALYTICS
+  PAID_ADS
+  EMAIL_MARKETING
+  GENERAL
+}
+
+model User {
+  id            String     @id @default(cuid())
+  name          String
+  email         String     @unique
+  password      String
+  role          Role       @default(JUNIOR_MARKETER)
+  department    Department @default(GENERAL)
+  avatar        String?
+  title         String?    // Job title (e.g., "Senior Social Media Manager")
+  phone         String?
+  timezone      String     @default("Africa/Algiers")
+  totalPoints   Int        @default(0)
+  weeklyPoints  Int        @default(0)
+  monthlyPoints Int        @default(0)
+  active        Boolean    @default(true)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  // Relations
+  attendance       Attendance[]
+  createdTasks     Task[]       @relation("TaskCreator")
+  assignedTasks    Task[]       @relation("TaskAssignee")
+  reports          Report[]
+  createdMeetings  Meeting[]
+  meetingAttended  MeetingAttendee[]
+  kbEntries        KBEntry[]
+  announcements    Announcement[]
+  kudosGiven       Kudos[]      @relation("KudosFrom")
+  kudosReceived    Kudos[]      @relation("KudosTo")
+  pointHistory     PointHistory[]
+  sessions         Session[]
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([token])
+}
+
+// ============================================================
+// Attendance
+// ============================================================
+
+model Attendance {
+  id        String   @id @default(cuid())
+  userId    String
+  date      String   // YYYY-MM-DD
+  checkIn   DateTime
+  checkOut  DateTime?
+  late      Boolean  @default(false)
+  workMinutes Int    @default(0)
+  points    Int      @default(0)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+  @@index([date])
+}
+
+// ============================================================
+// Tasks
+// ============================================================
+
+enum TaskStatus {
+  OPEN
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+model Task {
+  id               String       @id @default(cuid())
+  title            String
+  description      String
+  deadline         DateTime
+  priority         TaskPriority @default(MEDIUM)
+  status           TaskStatus   @default(OPEN)
+  assigneeId       String?
+  creatorId        String
+  completionNotes  String?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+  completedAt      DateTime?
+
+  assignee User? @relation("TaskAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+  creator  User  @relation("TaskCreator", fields: [creatorId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@index([assigneeId])
+  @@index([creatorId])
+  @@index([deadline])
+}
+
+// ============================================================
+// Daily Reports
+// ============================================================
+
+model Report {
+  id          String   @id @default(cuid())
+  userId      String
+  date        String   // YYYY-MM-DD
+  completed   String
+  inProgress  String
+  blockers    String   @default("لا يوجد")
+  tomorrow    String   @default("—")
+  createdAt   DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+  @@index([date])
+}
+
+// ============================================================
+// Meetings
+// ============================================================
+
+enum MeetingType {
+  STANDUP
+  WEEKLY
+  PROJECT_REVIEW
+  ONE_ON_ONE
+  BRAINSTORM
+  GENERAL
+}
+
+model Meeting {
+  id          String       @id @default(cuid())
+  title       String
+  description String?
+  datetime    DateTime
+  durationMin Int          @default(30)
+  type        MeetingType  @default(GENERAL)
+  agenda      String?
+  location    String       @default("قاعة الاجتماعات")
+  status      String       @default("scheduled") // scheduled, completed, cancelled
+  creatorId   String
+  createdAt   DateTime     @default(now())
+  creator     User         @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  attendees   MeetingAttendee[]
+
+  @@index([datetime])
+  @@index([status])
+}
+
+model MeetingAttendee {
+  id         String   @id @default(cuid())
+  meetingId  String
+  userId     String
+  attended   Boolean  @default(false)
+  points     Int      @default(0)
+  meeting    Meeting  @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([meetingId, userId])
+}
+
+// ============================================================
+// Knowledge Base
+// ============================================================
+
+enum KBCategory {
+  PLAYBOOK
+  TEMPLATE
+  BRAND_GUIDE
+  TOOL_TUTORIAL
+  CASE_STUDY
+  FAQ
+}
+
+model KBEntry {
+  id          String     @id @default(cuid())
+  title       String
+  url         String
+  category    KBCategory
+  summary     String?
+  tags        String     // comma-separated tags
+  creatorId   String
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  creator     User       @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+
+  @@index([category])
+}
+
+// ============================================================
+// Announcements
+// ============================================================
+
+model Announcement {
+  id         String   @id @default(cuid())
+  title      String
+  content    String
+  pinned     Boolean  @default(false)
+  creatorId  String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  creator    User     @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+
+  @@index([createdAt])
+}
+
+// ============================================================
+// Kudos (peer recognition)
+// ============================================================
+
+model Kudos {
+  id        String   @id @default(cuid())
+  fromId    String
+  toId      String
+  reason    String
+  points    Int      @default(2)
+  createdAt DateTime @default(now())
+  from      User     @relation("KudosFrom", fields: [fromId], references: [id], onDelete: Cascade)
+  to        User     @relation("KudosTo", fields: [toId], references: [id], onDelete: Cascade)
+
+  @@index([toId])
+  @@index([createdAt])
+}
+
+// ============================================================
+// Point History (audit trail)
+// ============================================================
+
+model PointHistory {
+  id        String   @id @default(cuid())
+  userId    String
+  amount    Int
+  reason    String
+  source    String   // checkin, task, report, meeting, kudos, manual
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([createdAt])
+}
