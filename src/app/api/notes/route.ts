@@ -80,6 +80,10 @@ export async function POST(req: NextRequest) {
     let translatedEn: string | null = null;
 
     try {
+      // Ensure ZAI config file exists (needed on Railway)
+      const { ensureZAIConfig } = await import("@/lib/zai-config");
+      ensureZAIConfig();
+
       const ZAI = (await import("z-ai-web-dev-sdk")).default;
       const zai = await ZAI.create();
 
