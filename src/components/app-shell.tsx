@@ -14,8 +14,8 @@ import {
   Menu,
   X,
   Clock,
-  ClipboardList,
   ClipboardCheck,
+  MessageSquare,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -32,7 +32,7 @@ import { LeaderboardModule } from "@/components/modules/leaderboard";
 import { KnowledgeBaseModule } from "@/components/modules/knowledge-base";
 import { AnnouncementsModule } from "@/components/modules/announcements";
 import { TeamModule } from "@/components/modules/team";
-import { WorkPlansModule } from "@/components/modules/work-plans";
+import { NotesModule } from "@/components/modules/notes";
 import { ReviewModule } from "@/components/modules/review";
 import type { User } from "@/app/page";
 
@@ -59,7 +59,6 @@ export function AppShell({ user, activeTab, onTabChange, onLogout }: Props) {
     { id: "dashboard", label: t("nav.dashboard"), icon: LayoutDashboard },
     { id: "attendance", label: t("nav.attendance"), icon: Clock },
     { id: "tasks", label: t("nav.tasks"), icon: CheckSquare },
-    { id: "workplans", label: t("nav.workplans"), icon: ClipboardList },
     { id: "reports", label: t("nav.reports"), icon: FileText },
     { id: "meetings", label: t("nav.meetings"), icon: Calendar },
     { id: "leaderboard", label: t("nav.leaderboard"), icon: Trophy },
@@ -69,6 +68,7 @@ export function AppShell({ user, activeTab, onTabChange, onLogout }: Props) {
 
   const TL_ONLY_ITEMS = [
     { id: "review", label: t("nav.review"), icon: ClipboardCheck },
+    { id: "notes", label: t("nav.notes"), icon: MessageSquare },
     { id: "team", label: t("nav.team"), icon: Users },
   ];
 
@@ -82,8 +82,8 @@ export function AppShell({ user, activeTab, onTabChange, onLogout }: Props) {
         return <AttendanceModule user={user} />;
       case "tasks":
         return <TasksModule user={user} />;
-      case "workplans":
-        return <WorkPlansModule user={user} />;
+      case "notes":
+        return <NotesModule user={user} />;
       case "review":
         return <ReviewModule user={user} />;
       case "reports":

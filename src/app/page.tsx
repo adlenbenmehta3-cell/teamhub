@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { LoginScreen } from "@/components/login-screen";
 import { AppShell } from "@/components/app-shell";
+import { NotesPopup } from "@/components/notes-popup";
 import { useLanguage } from "@/components/language-provider";
 import { toast } from "sonner";
 
@@ -77,11 +78,15 @@ export default function Home() {
   }
 
   return (
-    <AppShell
-      user={user}
-      activeTab={activeTab}
-      onTabChange={setActiveTab}
-      onLogout={handleLogout}
-    />
+    <>
+      <AppShell
+        user={user}
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        onLogout={handleLogout}
+      />
+      {/* Worker notes popup — shows unread notes on login */}
+      <NotesPopup user={user} />
+    </>
   );
 }

@@ -67,6 +67,8 @@ model User {
   createdWorkPlans       WorkPlan[]       @relation("WorkPlanCreator")
   assignedWorkPlans      WorkPlan[]       @relation("WorkPlanAssignee")
   dailyCompletions       DailyCompletion[]
+  notesReceived          WorkerNote[]     @relation("NoteRecipient")
+  notesGiven             WorkerNote[]     @relation("NoteAuthor")
 }
 
 model Session {
@@ -386,4 +388,28 @@ model DailyCompletion {
   @@unique([workPlanItemId, userId, date])
   @@index([userId, date])
   @@index([workPlanItemId, date])
+}
+
+// ============================================================
+// Worker Notes — admin sends notes to workers with auto-translation
+// ============================================================
+
+model WorkerNote {
+  id              String   @id @default(cuid())
+  recipientId     String   // Worker who receives the note
+  authorId        String   // Admin who wrote the note
+  title           String
+  content         String   // Original content (admin's language)
+  sourceLang      String   @default("en") // Language the admin wrote in
+  translatedAr    String?  // Arabic translation
+  translatedEn    String?  // English translation
+  read            Boolean  @default(false) // Has worker seen it?
+  readAt          DateTime?
+  createdAt       DateTime @default(now())
+
+  recipient       User     @relation("NoteRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
+  author          User     @relation("NoteAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([recipientId])
+  @@index([read])
 }
