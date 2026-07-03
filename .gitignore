@@ -36,6 +36,7 @@ prisma/migrations/dev.db*
 # Database
 db/*.db
 db/*.db-journal
+!db/teamhub-empty.db
 
 # Logs
 *.log

@@ -1,29 +1,15 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { hashPasswordForStorage } from "@/lib/auth";
-import { PrismaClient } from "@prisma/client";
-
-/**
- * Ensure database schema exists by pushing it.
- * On Vercel serverless, the /tmp/teamhub.db file may not exist on cold start.
- */
-async function ensureSchema() {
-  try {
-    // Try to query — if it fails, schema needs to be created
-    await db.user.count();
-  } catch (e) {
-    // Schema doesn't exist. We need to push it.
-    // Since we can't run prisma CLI in serverless, we use a different approach:
-    // The prisma db push should run during build, creating the schema.
-    // For runtime, we rely on the schema being created.
-    throw e;
-  }
-}
 
 /**
  * POST /api/seed
  * Initializes the database with demo data: 1 team leader + 5 members.
  * Only works if the database is empty.
+ *
+ * Note: On Vercel serverless, the empty SQLite template (db/teamhub-empty.db)
+ * is copied to /tmp/teamhub.db on cold start by src/lib/db.ts. The schema
+ * already exists in the template, so this endpoint just inserts demo data.
  */
 export async function POST() {
   try {
@@ -31,12 +17,10 @@ export async function POST() {
     try {
       userCount = await db.user.count();
     } catch (e) {
-      // Database doesn't exist yet — schema needs to be pushed
-      console.error("DB query failed, schema may not exist:", e);
       return NextResponse.json(
         {
-          error:
-            "Database not initialized. Please ensure prisma db push runs during build.",
+          error: "Database not accessible",
+          details: e instanceof Error ? e.message : String(e),
         },
         { status: 500 }
       );
@@ -109,7 +93,6 @@ export async function POST() {
       });
       createdMembers.push(created);
 
-      // Give them some initial points
       const initialPoints = Math.floor(Math.random() * 30) + 10;
       await db.user.update({
         where: { id: created.id },
@@ -121,7 +104,7 @@ export async function POST() {
       });
     }
 
-    // Create some sample tasks
+    // Create sample tasks
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
     const nextWeek = new Date();
@@ -181,7 +164,7 @@ export async function POST() {
       ],
     });
 
-    // Create a welcome announcement
+    // Create welcome announcement
     await db.announcement.create({
       data: {
         title: "مرحبًا بكم في TeamHub!",
@@ -200,7 +183,7 @@ export async function POST() {
       },
     });
 
-    // Schedule a weekly meeting
+    // Schedule weekly meeting
     const friday = new Date();
     const daysUntilFriday = (5 - friday.getDay() + 7) % 7 || 7;
     friday.setDate(friday.getDate() + daysUntilFriday);
@@ -219,7 +202,7 @@ export async function POST() {
       },
     });
 
-    // Add a sample KB entry
+    // KB entries
     await db.kBEntry.create({
       data: {
         title: "دليل إنشاء حملة على فيسبوك إعلانات",
@@ -254,7 +237,10 @@ export async function POST() {
   } catch (e) {
     console.error("Seed error:", e);
     return NextResponse.json(
-      { error: "حدث خطأ أثناء إنشاء البيانات التجريبية" },
+      {
+        error: "حدث خطأ أثناء إنشاء البيانات التجريبية",
+        details: e instanceof Error ? e.message : String(e),
+      },
       { status: 500 }
     );
   }
