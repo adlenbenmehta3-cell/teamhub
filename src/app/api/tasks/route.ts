@@ -31,13 +31,8 @@ export async function GET(req: NextRequest) {
     if (assigneeId) {
       where.assigneeId = assigneeId;
     }
-    // Filter: show tasks due today AND any overdue uncompleted tasks
-    // Uncompleted tasks from previous days stay visible until completed
+    // Filter: show ALL uncompleted (open) tasks
     if (todayOnly) {
-      const endOfDay = new Date();
-      endOfDay.setHours(23, 59, 59, 999);
-      where.deadline = { lte: endOfDay };
-      // Only show OPEN (uncompleted) tasks — completed ones are hidden
       where.status = "OPEN";
     }
 
