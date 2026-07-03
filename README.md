@@ -43,12 +43,31 @@ bun run db:push
 bun run dev
 ```
 
-### 4. Create demo data
-Open http://localhost:3000, click "First time? Create demo data".
+### 4. First-time setup
+Open http://localhost:3000. You'll see a setup dialog automatically.
+- Enter your name (e.g., "Adlene")
+- Choose a password (6+ characters)
+- Confirm password
 
-**Demo credentials:**
-- Team Leader: `leader@team.com` / `leader123`
-- Members: `fatima@team.com`, `khaled@team.com`, etc. / `member123`
+This creates the **admin account** (email: `admin@team.com`). You are now logged in as the admin.
+
+### 5. Add team members
+As admin, go to "Team Management" → "New Member" and create accounts for your workers. Give them their credentials — they cannot self-register.
+
+## 👑 Admin-Only Mode
+
+This platform is **admin-only**:
+- ✅ No self-registration (sign-up) for workers
+- ✅ Only the admin can create, edit, and delete worker accounts
+- ✅ Only the admin can create tasks, meetings, and announcements
+- ✅ Admin email is fixed: `admin@team.com`
+
+Workers can only:
+- Check in/out
+- View and complete assigned tasks
+- Submit daily reports (with Google Drive link)
+- View leaderboard and knowledge base
+- Send kudos to peers
 
 ## 🌐 Language Switching
 
@@ -106,3 +125,18 @@ prisma/
 ## 📝 License
 
 MIT — Free to use, modify, and distribute.
+
+## ⚠️ Important Note on Vercel Deployment
+
+The current deployment uses **SQLite on Vercel serverless**, which has a limitation:
+each serverless function invocation may hit a different container with its own
+ephemeral `/tmp` directory. This means data may not persist reliably between
+requests on cold instances.
+
+**For production use**, please migrate to a persistent database:
+- [Vercel Postgres](https://vercel.com/docs/storage/vercel-postgres) (recommended)
+- [Neon Postgres](https://neon.tech)
+- [Supabase](https://supabase.com)
+
+The local development version (with `npm run dev`) works perfectly because it
+uses a single SQLite file on disk.
