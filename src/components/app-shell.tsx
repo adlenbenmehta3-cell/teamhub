@@ -15,6 +15,7 @@ import {
   X,
   Clock,
   ClipboardList,
+  ClipboardCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -32,6 +33,7 @@ import { KnowledgeBaseModule } from "@/components/modules/knowledge-base";
 import { AnnouncementsModule } from "@/components/modules/announcements";
 import { TeamModule } from "@/components/modules/team";
 import { WorkPlansModule } from "@/components/modules/work-plans";
+import { ReviewModule } from "@/components/modules/review";
 import type { User } from "@/app/page";
 
 interface Props {
@@ -65,7 +67,10 @@ export function AppShell({ user, activeTab, onTabChange, onLogout }: Props) {
     { id: "announcements", label: t("nav.announcements"), icon: Megaphone },
   ];
 
-  const TL_ONLY_ITEMS = [{ id: "team", label: t("nav.team"), icon: Users }];
+  const TL_ONLY_ITEMS = [
+    { id: "review", label: t("nav.review"), icon: ClipboardCheck },
+    { id: "team", label: t("nav.team"), icon: Users },
+  ];
 
   const navItems = [...NAV_ITEMS, ...(isTL ? TL_ONLY_ITEMS : [])];
 
@@ -79,6 +84,8 @@ export function AppShell({ user, activeTab, onTabChange, onLogout }: Props) {
         return <TasksModule user={user} />;
       case "workplans":
         return <WorkPlansModule user={user} />;
+      case "review":
+        return <ReviewModule user={user} />;
       case "reports":
         return <ReportsModule user={user} />;
       case "meetings":
