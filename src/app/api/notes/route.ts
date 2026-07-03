@@ -80,31 +80,29 @@ export async function POST(req: NextRequest) {
     let translatedEn: string | null = null;
 
     try {
-      const { createZAI } = await import("z-ai-web-dev-sdk");
-      const zai = await createZAI();
+      const ZAI = (await import("z-ai-web-dev-sdk")).default;
+      const zai = await ZAI.create();
 
       if (lang === "en") {
         // Admin wrote in English → translate to Arabic
         translatedEn = content;
-        const prompt = `Translate the following text to Arabic. Only output the translation, nothing else.\n\n${content}`;
         const result = await zai.chat.completions.create({
           messages: [
-            { role: "system", content: "You are a professional translator. Translate accurately to Arabic. Output only the translation." },
-            { role: "user", content: prompt },
+            { role: "system", content: "You are a professional translator. Translate the user's text to Arabic. Output only the Arabic translation, nothing else." },
+            { role: "user", content: content },
           ],
         });
-        translatedAr = result.choices[0]?.message?.content?.trim() || content;
+        translatedAr = result.choices?.[0]?.message?.content?.trim() || content;
       } else {
         // Admin wrote in Arabic → translate to English
         translatedAr = content;
-        const prompt = `Translate the following text to English. Only output the translation, nothing else.\n\n${content}`;
         const result = await zai.chat.completions.create({
           messages: [
-            { role: "system", content: "You are a professional translator. Translate accurately to English. Output only the translation." },
-            { role: "user", content: prompt },
+            { role: "system", content: "You are a professional translator. Translate the user's text to English. Output only the English translation, nothing else." },
+            { role: "user", content: content },
           ],
         });
-        translatedEn = result.choices[0]?.message?.content?.trim() || content;
+        translatedEn = result.choices?.[0]?.message?.content?.trim() || content;
       }
     } catch (translateErr) {
       console.error("Translation failed:", translateErr);
