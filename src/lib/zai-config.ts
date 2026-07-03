@@ -1,9 +1,10 @@
 import { writeFileSync, existsSync } from "fs";
 import path from "path";
+import os from "os";
 
 const CONFIG_PATHS = [
   path.join(process.cwd(), ".z-ai-config"),
-  path.join(require("os").homedir(), ".z-ai-config"),
+  path.join(os.homedir(), ".z-ai-config"),
   "/etc/.z-ai-config",
 ];
 
@@ -13,13 +14,11 @@ const ZAI_CONFIG = {
 };
 
 export function ensureZAIConfig() {
-  // Check if any config path exists
   for (const p of CONFIG_PATHS) {
     try {
       if (existsSync(p)) return true;
     } catch {}
   }
-  // Write config to cwd
   try {
     writeFileSync(
       path.join(process.cwd(), ".z-ai-config"),
