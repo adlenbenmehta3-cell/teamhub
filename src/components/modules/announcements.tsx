@@ -24,7 +24,11 @@ import {
 } from "@/components/ui/dialog";
 import { Megaphone, Plus, Pin, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { timeAgoArabic, formatArabicDateTime } from "@/lib/auth-labels";
+import { useLanguage } from "@/components/language-provider";
+import {
+  timeAgoArabic,
+  timeAgoEnglish,
+} from "@/lib/auth-labels";
 import type { User } from "@/app/page";
 
 interface Props {
@@ -32,16 +36,17 @@ interface Props {
 }
 
 export function AnnouncementsModule({ user }: Props) {
+  const { t, lang } = useLanguage();
   const [announcements, setAnnouncements] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [createOpen, setCreateOpen] = useState(false);
 
-  // Form
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [pinned, setPinned] = useState(false);
 
   const isTL = user.role === "TEAM_LEADER";
+  const timeAgo = lang === "ar" ? timeAgoArabic : timeAgoEnglish;
 
   useEffect(() => {
     loadAnnouncements();
@@ -60,7 +65,7 @@ export function AnnouncementsModule({ user }: Props) {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title || !content) {
-      toast.error("يرجى تعبئة العنوان والمحتوى");
+      toast.error(t("announcements.fillRequired"));
       return;
     }
     try {
@@ -74,31 +79,31 @@ export function AnnouncementsModule({ user }: Props) {
         toast.error(data.error);
         return;
       }
-      toast.success("تم نشر الإعلان");
+      toast.success(t("announcements.published"));
       setCreateOpen(false);
       setTitle("");
       setContent("");
       setPinned(false);
       loadAnnouncements();
     } catch {
-      toast.error("فشل نشر الإعلان");
+      toast.error(t("announcements.publishFailed"));
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("هل أنت متأكد من حذف هذا الإعلان؟")) return;
+    if (!confirm(t("announcements.deleteConfirm"))) return;
     try {
       const res = await fetch(`/api/announcements/${id}`, {
         method: "DELETE",
       });
       if (!res.ok) {
-        toast.error("فشل الحذف");
+        toast.error(t("announcements.deleteFailed"));
         return;
       }
-      toast.success("تم حذف الإعلان");
+      toast.success(t("announcements.deleted"));
       loadAnnouncements();
     } catch {
-      toast.error("فشل الحذف");
+      toast.error(t("announcements.deleteFailed"));
     }
   };
 
@@ -115,10 +120,10 @@ export function AnnouncementsModule({ user }: Props) {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl lg:text-3xl font-bold text-emerald-900">
-            الإعلانات
+            {t("announcements.title")}
           </h1>
           <p className="text-muted-foreground mt-1">
-            إعلانات وتحديثات الفريق
+            {t("announcements.subtitle")}
           </p>
         </div>
 
@@ -127,34 +132,40 @@ export function AnnouncementsModule({ user }: Props) {
             <DialogTrigger asChild>
               <Button className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700">
                 <Plus className="w-4 h-4 ml-2" />
-                إعلان جديد
+                {t("announcements.new")}
               </Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>نشر إعلان جديد</DialogTitle>
+                <DialogTitle>
+                  {t("announcements.createTitle")}
+                </DialogTitle>
                 <DialogDescription>
-                  سيظهر الإعلان لجميع أعضاء الفريق
+                  {t("announcements.createDesc")}
                 </DialogDescription>
               </DialogHeader>
               <form onSubmit={handleCreate} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="title">العنوان *</Label>
+                  <Label htmlFor="title">
+                    {t("announcements.title.label")} *
+                  </Label>
                   <Input
                     id="title"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
-                    placeholder="مثال: اجتماع طارئ غدًا"
+                    placeholder={t("announcements.title.placeholder")}
                     required
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="content">المحتوى *</Label>
+                  <Label htmlFor="content">
+                    {t("announcements.content.label")} *
+                  </Label>
                   <Textarea
                     id="content"
                     value={content}
                     onChange={(e) => setContent(e.target.value)}
-                    placeholder="محتوى الإعلان..."
+                    placeholder={t("announcements.content.placeholder")}
                     rows={6}
                     required
                   />
@@ -167,8 +178,11 @@ export function AnnouncementsModule({ user }: Props) {
                     onChange={(e) => setPinned(e.target.checked)}
                     className="w-4 h-4 rounded border-emerald-200"
                   />
-                  <Label htmlFor="pinned" className="text-sm cursor-pointer">
-                    تثبيت هذا الإعلان في الأعلى
+                  <Label
+                    htmlFor="pinned"
+                    className="text-sm cursor-pointer"
+                  >
+                    {t("announcements.pinned")}
                   </Label>
                 </div>
                 <DialogFooter>
@@ -177,13 +191,13 @@ export function AnnouncementsModule({ user }: Props) {
                     variant="outline"
                     onClick={() => setCreateOpen(false)}
                   >
-                    إلغاء
+                    {t("common.cancel")}
                   </Button>
                   <Button
                     type="submit"
                     className="bg-gradient-to-r from-emerald-600 to-teal-600"
                   >
-                    نشر
+                    {t("announcements.publish")}
                   </Button>
                 </DialogFooter>
               </form>
@@ -192,12 +206,13 @@ export function AnnouncementsModule({ user }: Props) {
         )}
       </div>
 
-      {/* Announcements */}
       {announcements.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center">
             <Megaphone className="w-12 h-12 text-muted-foreground/30 mx-auto mb-3" />
-            <p className="text-muted-foreground">لا توجد إعلانات</p>
+            <p className="text-muted-foreground">
+              {t("announcements.noAnnouncements")}
+            </p>
           </CardContent>
         </Card>
       ) : (
@@ -221,11 +236,11 @@ export function AnnouncementsModule({ user }: Props) {
                           className="border-emerald-300 text-emerald-700 bg-emerald-100"
                         >
                           <Pin className="w-3 h-3 ml-1" />
-                          مثبّت
+                          {t("announcements.pinned.label")}
                         </Badge>
                       )}
                       <span className="text-xs text-muted-foreground">
-                        {a.creator?.name} • {timeAgoArabic(a.createdAt)}
+                        {a.creator?.name} • {timeAgo(a.createdAt)}
                       </span>
                     </div>
                     <h3 className="font-bold text-emerald-900 text-lg mb-2">

@@ -40,11 +40,11 @@ import {
   Edit2,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useLanguage } from "@/components/language-provider";
 import {
   ROLE_LABELS,
   DEPARTMENT_LABELS,
   ROLE_COLORS,
-  formatArabicDate,
 } from "@/lib/auth-labels";
 import type { User } from "@/app/page";
 
@@ -53,19 +53,35 @@ interface Props {
 }
 
 export function TeamModule({ user }: Props) {
+  const { t, lang } = useLanguage();
   const [members, setMembers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [createOpen, setCreateOpen] = useState(false);
   const [editMember, setEditMember] = useState<any | null>(null);
 
-  // Form
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState("JUNIOR_MARKETER");
   const [department, setDepartment] = useState("GENERAL");
-  const [title, setTitle] = useState("");
+  const [titleField, setTitleField] = useState("");
   const [phone, setPhone] = useState("");
+
+  const roleLabels: Record<string, string> = {
+    TEAM_LEADER: t("role.team_leader"),
+    SENIOR_MARKETER: t("role.senior_marketer"),
+    MARKETING_SPECIALIST: t("role.marketing_specialist"),
+    JUNIOR_MARKETER: t("role.junior_marketer"),
+    GUEST: t("role.guest"),
+  };
+  const deptLabels: Record<string, string> = {
+    SOCIAL_MEDIA: t("dept.social_media"),
+    CONTENT_CREATION: t("dept.content_creation"),
+    SEO_ANALYTICS: t("dept.seo_analytics"),
+    PAID_ADS: t("dept.paid_ads"),
+    EMAIL_MARKETING: t("dept.email_marketing"),
+    GENERAL: t("dept.general"),
+  };
 
   useEffect(() => {
     loadMembers();
@@ -87,14 +103,14 @@ export function TeamModule({ user }: Props) {
     setPassword("");
     setRole("JUNIOR_MARKETER");
     setDepartment("GENERAL");
-    setTitle("");
+    setTitleField("");
     setPhone("");
   };
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || !email || !password) {
-      toast.error("يرجى تعبئة الحقول المطلوبة");
+      toast.error(t("team.fillRequired"));
       return;
     }
     try {
@@ -107,7 +123,7 @@ export function TeamModule({ user }: Props) {
           password,
           role,
           department,
-          title,
+          title: titleField,
           phone,
         }),
       });
@@ -116,12 +132,12 @@ export function TeamModule({ user }: Props) {
         toast.error(data.error);
         return;
       }
-      toast.success(`تمت إضافة ${name} للفريق`);
+      toast.success(t("team.added", { name }));
       setCreateOpen(false);
       resetForm();
       loadMembers();
     } catch {
-      toast.error("فشل إضافة العضو");
+      toast.error(t("team.addFailed"));
     }
   };
 
@@ -133,7 +149,7 @@ export function TeamModule({ user }: Props) {
         name,
         role,
         department,
-        title,
+        title: titleField,
         phone,
       };
       if (password) body.password = password;
@@ -148,27 +164,27 @@ export function TeamModule({ user }: Props) {
         toast.error(data.error);
         return;
       }
-      toast.success("تم تحديث بيانات العضو");
+      toast.success(t("team.updated"));
       setEditMember(null);
       resetForm();
       loadMembers();
     } catch {
-      toast.error("فشل التحديث");
+      toast.error(t("team.updateFailed"));
     }
   };
 
   const handleDelete = async (id: string, memberName: string) => {
-    if (!confirm(`هل أنت متأكد من حذف ${memberName}؟`)) return;
+    if (!confirm(t("team.deleteConfirm", { name: memberName }))) return;
     try {
       const res = await fetch(`/api/team/${id}`, { method: "DELETE" });
       if (!res.ok) {
-        toast.error("فشل الحذف");
+        toast.error(t("team.deleteFailed"));
         return;
       }
-      toast.success(`تم حذف ${memberName}`);
+      toast.success(t("team.deleted", { name: memberName }));
       loadMembers();
     } catch {
-      toast.error("فشل الحذف");
+      toast.error(t("team.deleteFailed"));
     }
   };
 
@@ -179,7 +195,7 @@ export function TeamModule({ user }: Props) {
     setPassword("");
     setRole(m.role);
     setDepartment(m.department);
-    setTitle(m.title || "");
+    setTitleField(m.title || "");
     setPhone(m.phone || "");
   };
 
@@ -196,10 +212,10 @@ export function TeamModule({ user }: Props) {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl lg:text-3xl font-bold text-emerald-900">
-            إدارة الفريق
+            {t("team.title")}
           </h1>
           <p className="text-muted-foreground mt-1">
-            {members.length} عضو في الفريق
+            {t("team.subtitle", { count: members.length })}
           </p>
         </div>
 
@@ -219,18 +235,16 @@ export function TeamModule({ user }: Props) {
               onClick={() => setCreateOpen(true)}
             >
               <Plus className="w-4 h-4 ml-2" />
-              عضو جديد
+              {t("team.new")}
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>
-                {editMember ? "تعديل عضو" : "إضافة عضو جديد"}
+                {editMember ? t("team.editTitle") : t("team.createTitle")}
               </DialogTitle>
               <DialogDescription>
-                {editMember
-                  ? "عدّل بيانات العضو"
-                  : "أضف عضوًا جديدًا للفريق"}
+                {editMember ? t("team.editDesc") : t("team.createDesc")}
               </DialogDescription>
             </DialogHeader>
             <form
@@ -238,7 +252,7 @@ export function TeamModule({ user }: Props) {
               className="space-y-4"
             >
               <div className="space-y-2">
-                <Label htmlFor="name">الاسم *</Label>
+                <Label htmlFor="name">{t("team.name.label")} *</Label>
                 <Input
                   id="name"
                   value={name}
@@ -247,7 +261,7 @@ export function TeamModule({ user }: Props) {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="email">البريد الإلكتروني *</Label>
+                <Label htmlFor="email">{t("team.email.label")} *</Label>
                 <Input
                   id="email"
                   type="email"
@@ -260,7 +274,8 @@ export function TeamModule({ user }: Props) {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="password">
-                  كلمة المرور {editMember ? "(اتركها فارغة للإبقاء على الحالية)" : "*"}
+                  {t("team.password.label")}{" "}
+                  {editMember ? t("team.password.editHint") : "*"}
                 </Label>
                 <Input
                   id="password"
@@ -274,54 +289,76 @@ export function TeamModule({ user }: Props) {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">
-                  <Label htmlFor="role">الدور</Label>
+                  <Label htmlFor="role">{t("team.role.label")}</Label>
                   <Select value={role} onValueChange={setRole}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="TEAM_LEADER">قائد الفريق</SelectItem>
-                      <SelectItem value="SENIOR_MARKETER">تسويقي أول</SelectItem>
-                      <SelectItem value="MARKETING_SPECIALIST">أخصائي تسويق</SelectItem>
-                      <SelectItem value="JUNIOR_MARKETER">تسويقي مبتدئ</SelectItem>
-                      <SelectItem value="GUEST">زائر</SelectItem>
+                      <SelectItem value="TEAM_LEADER">
+                        {t("role.team_leader")}
+                      </SelectItem>
+                      <SelectItem value="SENIOR_MARKETER">
+                        {t("role.senior_marketer")}
+                      </SelectItem>
+                      <SelectItem value="MARKETING_SPECIALIST">
+                        {t("role.marketing_specialist")}
+                      </SelectItem>
+                      <SelectItem value="JUNIOR_MARKETER">
+                        {t("role.junior_marketer")}
+                      </SelectItem>
+                      <SelectItem value="GUEST">{t("role.guest")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="department">القسم</Label>
+                  <Label htmlFor="department">
+                    {t("team.department.label")}
+                  </Label>
                   <Select value={department} onValueChange={setDepartment}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="GENERAL">عام</SelectItem>
-                      <SelectItem value="SOCIAL_MEDIA">التواصل الاجتماعي</SelectItem>
-                      <SelectItem value="CONTENT_CREATION">إنشاء المحتوى</SelectItem>
-                      <SelectItem value="SEO_ANALYTICS">SEO والتحليلات</SelectItem>
-                      <SelectItem value="PAID_ADS">الإعلانات المدفوعة</SelectItem>
-                      <SelectItem value="EMAIL_MARKETING">التسويق عبر البريد</SelectItem>
+                      <SelectItem value="GENERAL">
+                        {t("dept.general")}
+                      </SelectItem>
+                      <SelectItem value="SOCIAL_MEDIA">
+                        {t("dept.social_media")}
+                      </SelectItem>
+                      <SelectItem value="CONTENT_CREATION">
+                        {t("dept.content_creation")}
+                      </SelectItem>
+                      <SelectItem value="SEO_ANALYTICS">
+                        {t("dept.seo_analytics")}
+                      </SelectItem>
+                      <SelectItem value="PAID_ADS">
+                        {t("dept.paid_ads")}
+                      </SelectItem>
+                      <SelectItem value="EMAIL_MARKETING">
+                        {t("dept.email_marketing")}
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="title">المسمى الوظيفي</Label>
+                <Label htmlFor="title">{t("team.jobTitle.label")}</Label>
                 <Input
                   id="title"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  placeholder="مثال: مدير حسابات التواصل"
+                  value={titleField}
+                  onChange={(e) => setTitleField(e.target.value)}
+                  placeholder={t("team.jobTitle.placeholder")}
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="phone">رقم الهاتف</Label>
+                <Label htmlFor="phone">{t("team.phone.label")}</Label>
                 <Input
                   id="phone"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   dir="ltr"
-                  placeholder="+213..."
+                  placeholder={t("team.phone.placeholder")}
                 />
               </div>
               <DialogFooter>
@@ -334,13 +371,13 @@ export function TeamModule({ user }: Props) {
                     resetForm();
                   }}
                 >
-                  إلغاء
+                  {t("common.cancel")}
                 </Button>
                 <Button
                   type="submit"
                   className="bg-gradient-to-r from-emerald-600 to-teal-600"
                 >
-                  {editMember ? "حفظ" : "إضافة"}
+                  {editMember ? t("team.save") : t("team.add")}
                 </Button>
               </DialogFooter>
             </form>
@@ -350,7 +387,7 @@ export function TeamModule({ user }: Props) {
 
       {/* Team Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
-        {Object.entries(ROLE_LABELS).map(([key, label]) => {
+        {Object.entries(roleLabels).map(([key, label]) => {
           const count = members.filter((m) => m.role === key).length;
           return (
             <Card key={key}>
@@ -366,8 +403,8 @@ export function TeamModule({ user }: Props) {
       {/* Members List */}
       <Card>
         <CardHeader>
-          <CardTitle>أعضاء الفريق</CardTitle>
-          <CardDescription>إدارة الأعضاء وأدوارهم</CardDescription>
+          <CardTitle>{t("team.members")}</CardTitle>
+          <CardDescription>{t("team.membersDesc")}</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
@@ -392,7 +429,7 @@ export function TeamModule({ user }: Props) {
                       variant="outline"
                       className={ROLE_COLORS[m.role]}
                     >
-                      {ROLE_LABELS[m.role]}
+                      {roleLabels[m.role]}
                     </Badge>
                   </div>
                   <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1 flex-wrap">
@@ -414,7 +451,7 @@ export function TeamModule({ user }: Props) {
                     )}
                   </div>
                   <p className="text-xs text-emerald-600 mt-0.5">
-                    {DEPARTMENT_LABELS[m.department]}
+                    {deptLabels[m.department]}
                   </p>
                 </div>
 
@@ -425,7 +462,8 @@ export function TeamModule({ user }: Props) {
                       {m.totalPoints}
                     </p>
                     <p className="text-xs text-amber-600 font-semibold">
-                      {m.weeklyPoints} هذا الأسبوع
+                      {m.weeklyPoints}{" "}
+                      {lang === "ar" ? "هذا الأسبوع" : "this week"}
                     </p>
                   </div>
 

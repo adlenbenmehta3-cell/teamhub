@@ -13,10 +13,13 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Clock, LogIn, LogOut, Calendar, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
+import { useLanguage } from "@/components/language-provider";
 import {
   DEPARTMENT_LABELS,
   formatArabicDate,
+  formatEnglishDate,
   formatArabicTime,
+  formatEnglishTime,
   formatDuration,
 } from "@/lib/auth-labels";
 import type { User } from "@/app/page";
@@ -26,6 +29,7 @@ interface Props {
 }
 
 export function AttendanceModule({ user }: Props) {
+  const { t, lang } = useLanguage();
   const [todayData, setTodayData] = useState<any>(null);
   const [history, setHistory] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -66,8 +70,8 @@ export function AttendanceModule({ user }: Props) {
       }
       toast.success(
         data.late
-          ? `تم تسجيل الحضور (متأخر) • +${data.points} نقطة`
-          : `تم تسجيل الحضور في الوقت • +${data.points} نقطة`
+          ? t("attendance.checkedInLate", { points: data.points })
+          : t("attendance.checkedInOnTime", { points: data.points })
       );
       loadData();
     } finally {
@@ -89,7 +93,7 @@ export function AttendanceModule({ user }: Props) {
         return;
       }
       toast.success(
-        `تم تسجيل الانصراف • مدة العمل: ${formatDuration(data.workMinutes)}`
+        t("attendance.checkedOut", { duration: formatDuration(data.workMinutes) })
       );
       loadData();
     } finally {
@@ -106,18 +110,21 @@ export function AttendanceModule({ user }: Props) {
   }
 
   const today = new Date().toISOString().split("T")[0];
-  const todayRecord = isTL
-    ? null
-    : history.find((r) => r.date === today);
+  const todayRecord = isTL ? null : history.find((r) => r.date === today);
+
+  const formatDate = lang === "ar" ? formatArabicDate : formatEnglishDate;
+  const formatTime = lang === "ar" ? formatArabicTime : formatEnglishTime;
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl lg:text-3xl font-bold text-emerald-900">الحضور</h1>
+        <h1 className="text-2xl lg:text-3xl font-bold text-emerald-900">
+          {t("attendance.title")}
+        </h1>
         <p className="text-muted-foreground mt-1">
           {isTL
-            ? "متابعة حضور الفريق اليوم"
-            : "سجّل حضورك وانصرافك اليومي"}
+            ? t("attendance.subtitle.leader")
+            : t("attendance.subtitle.member")}
         </p>
       </div>
 
@@ -127,37 +134,45 @@ export function AttendanceModule({ user }: Props) {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Clock className="w-5 h-5 text-emerald-600" />
-              حالة اليوم — {formatArabicDate(new Date())}
+              {t("attendance.todayStatus")} — {formatDate(new Date())}
             </CardTitle>
             <CardDescription>
               {todayRecord
                 ? todayRecord.checkOut
-                  ? "أكملت يومك بنجاح!"
-                  : "أنت مسجّل حضور. لا تنسَ تسجيل الانصراف عند المغادرة."
-                : "لم تسجّل حضورك بعد اليوم"}
+                  ? t("attendance.completedDay")
+                  : t("attendance.checkedInNotOut")
+                : t("attendance.notCheckedIn")}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             {todayRecord ? (
               <div className="grid grid-cols-3 gap-3">
                 <div className="text-center p-3 rounded-lg bg-emerald-50">
-                  <p className="text-xs text-emerald-600 mb-1">الحضور</p>
+                  <p className="text-xs text-emerald-600 mb-1">
+                    {t("attendance.checkIn")}
+                  </p>
                   <p className="text-lg font-bold text-emerald-900">
-                    {formatArabicTime(todayRecord.checkIn)}
+                    {formatTime(todayRecord.checkIn)}
                   </p>
                 </div>
                 <div className="text-center p-3 rounded-lg bg-teal-50">
-                  <p className="text-xs text-teal-600 mb-1">الانصراف</p>
+                  <p className="text-xs text-teal-600 mb-1">
+                    {t("attendance.checkOut")}
+                  </p>
                   <p className="text-lg font-bold text-teal-900">
                     {todayRecord.checkOut
-                      ? formatArabicTime(todayRecord.checkOut)
+                      ? formatTime(todayRecord.checkOut)
                       : "—"}
                   </p>
                 </div>
                 <div className="text-center p-3 rounded-lg bg-amber-50">
-                  <p className="text-xs text-amber-600 mb-1">الحالة</p>
+                  <p className="text-xs text-amber-600 mb-1">
+                    {t("attendance.status")}
+                  </p>
                   <p className="text-lg font-bold text-amber-900">
-                    {todayRecord.late ? "متأخر" : "في الوقت"}
+                    {todayRecord.late
+                      ? t("attendance.late")
+                      : t("attendance.onTime")}
                   </p>
                 </div>
               </div>
@@ -165,7 +180,7 @@ export function AttendanceModule({ user }: Props) {
               <div className="text-center py-6">
                 <AlertCircle className="w-10 h-10 text-amber-500 mx-auto mb-2" />
                 <p className="text-sm text-muted-foreground mb-4">
-                  لم تسجّل حضورك اليوم بعد
+                  {t("attendance.notRecordedYet")}
                 </p>
               </div>
             )}
@@ -177,16 +192,18 @@ export function AttendanceModule({ user }: Props) {
                 className="flex-1 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700"
               >
                 <LogIn className="w-4 h-4 ml-2" />
-                تسجيل الحضور
+                {t("attendance.checkInBtn")}
               </Button>
               <Button
                 onClick={handleCheckOut}
-                disabled={actionLoading || !todayRecord || !!todayRecord.checkOut}
+                disabled={
+                  actionLoading || !todayRecord || !!todayRecord.checkOut
+                }
                 variant="outline"
                 className="flex-1 border-emerald-200 text-emerald-700 hover:bg-emerald-50"
               >
                 <LogOut className="w-4 h-4 ml-2" />
-                تسجيل الانصراف
+                {t("attendance.checkOutBtn")}
               </Button>
             </div>
           </CardContent>
@@ -197,9 +214,13 @@ export function AttendanceModule({ user }: Props) {
       {isTL && todayData?.team && (
         <Card>
           <CardHeader>
-            <CardTitle>حضور الفريق اليوم</CardTitle>
+            <CardTitle>{t("attendance.teamToday")}</CardTitle>
             <CardDescription>
-              {todayData.checkedIn} من {todayData.total} حاضر • {todayData.late} متأخر
+              {t("attendance.teamSummary", {
+                checked: todayData.checkedIn,
+                total: todayData.total,
+                late: todayData.late,
+              })}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -208,19 +229,25 @@ export function AttendanceModule({ user }: Props) {
                 <p className="text-2xl font-bold text-emerald-700">
                   {todayData.checkedIn}
                 </p>
-                <p className="text-xs text-emerald-600">حاضر</p>
+                <p className="text-xs text-emerald-600">
+                  {t("attendance.present")}
+                </p>
               </div>
               <div className="p-3 rounded-lg bg-red-50 text-center">
                 <p className="text-2xl font-bold text-red-700">
                   {todayData.notCheckedIn}
                 </p>
-                <p className="text-xs text-red-600">غائب</p>
+                <p className="text-xs text-red-600">
+                  {t("dashboard.absent")}
+                </p>
               </div>
               <div className="p-3 rounded-lg bg-amber-50 text-center">
                 <p className="text-2xl font-bold text-amber-700">
                   {todayData.late}
                 </p>
-                <p className="text-xs text-amber-600">متأخر</p>
+                <p className="text-xs text-amber-600">
+                  {t("attendance.late")}
+                </p>
               </div>
               <div className="p-3 rounded-lg bg-teal-50 text-center">
                 <p className="text-2xl font-bold text-teal-700">
@@ -229,7 +256,9 @@ export function AttendanceModule({ user }: Props) {
                   )}
                   %
                 </p>
-                <p className="text-xs text-teal-600">نسبة الحضور</p>
+                <p className="text-xs text-teal-600">
+                  {t("attendance.attendanceRate")}
+                </p>
               </div>
             </div>
 
@@ -252,7 +281,8 @@ export function AttendanceModule({ user }: Props) {
                     <div>
                       <p className="font-medium text-sm">{member.name}</p>
                       <p className="text-xs text-muted-foreground">
-                        {DEPARTMENT_LABELS[member.department] || member.department}
+                        {DEPARTMENT_LABELS[member.department] ||
+                          member.department}
                       </p>
                     </div>
                   </div>
@@ -267,12 +297,14 @@ export function AttendanceModule({ user }: Props) {
                               : "border-emerald-200 text-emerald-700 bg-emerald-50"
                           }
                         >
-                          {member.attendance.late ? "متأخر" : "في الوقت"}
+                          {member.attendance.late
+                            ? t("attendance.late")
+                            : t("attendance.onTime")}
                         </Badge>
                         <span className="text-xs text-muted-foreground">
                           {member.attendance.checkOut
-                            ? `خرج ${formatArabicTime(member.attendance.checkOut)}`
-                            : `${formatArabicTime(member.attendance.checkIn)}`}
+                            ? `${formatTime(member.attendance.checkOut)}`
+                            : `${formatTime(member.attendance.checkIn)}`}
                         </span>
                       </div>
                     ) : (
@@ -280,7 +312,7 @@ export function AttendanceModule({ user }: Props) {
                         variant="outline"
                         className="border-red-200 text-red-700 bg-red-50"
                       >
-                        غائب
+                        {t("dashboard.absent")}
                       </Badge>
                     )}
                   </div>
@@ -296,13 +328,13 @@ export function AttendanceModule({ user }: Props) {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Calendar className="w-5 h-5 text-emerald-600" />
-            سجل الحضور — آخر 30 يوم
+            {t("attendance.history")}
           </CardTitle>
         </CardHeader>
         <CardContent>
           {history.length === 0 ? (
             <p className="text-center text-muted-foreground py-8">
-              لا يوجد سجل حضور بعد
+              {t("attendance.noHistory")}
             </p>
           ) : (
             <div className="space-y-2 max-h-96 overflow-y-auto">
@@ -312,13 +344,12 @@ export function AttendanceModule({ user }: Props) {
                   className="flex items-center justify-between p-3 rounded-lg border border-emerald-50 hover:bg-emerald-50/30"
                 >
                   <div>
-                    <p className="font-medium text-sm">
-                      {formatArabicDate(r.date)}
-                    </p>
+                    <p className="font-medium text-sm">{formatDate(r.date)}</p>
                     <p className="text-xs text-muted-foreground">
-                      {formatArabicTime(r.checkIn)}
-                      {r.checkOut && ` → ${formatArabicTime(r.checkOut)}`}
-                      {r.workMinutes > 0 && ` • ${formatDuration(r.workMinutes)}`}
+                      {formatTime(r.checkIn)}
+                      {r.checkOut && ` → ${formatTime(r.checkOut)}`}
+                      {r.workMinutes > 0 &&
+                        ` • ${formatDuration(r.workMinutes)}`}
                     </p>
                   </div>
                   <Badge
@@ -329,7 +360,8 @@ export function AttendanceModule({ user }: Props) {
                         : "border-emerald-200 text-emerald-700 bg-emerald-50"
                     }
                   >
-                    {r.late ? "متأخر" : "في الوقت"} • +{r.points}
+                    {r.late ? t("attendance.late") : t("attendance.onTime")} • +
+                    {r.points}
                   </Badge>
                 </div>
               ))}

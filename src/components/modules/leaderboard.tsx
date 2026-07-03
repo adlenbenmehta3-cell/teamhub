@@ -26,11 +26,13 @@ import {
   Send,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useLanguage } from "@/components/language-provider";
 import {
   ROLE_LABELS,
   DEPARTMENT_LABELS,
   ROLE_COLORS,
   timeAgoArabic,
+  timeAgoEnglish,
 } from "@/lib/auth-labels";
 import {
   Dialog,
@@ -57,6 +59,7 @@ interface Props {
 }
 
 export function LeaderboardModule({ user }: Props) {
+  const { t, lang } = useLanguage();
   const [period, setPeriod] = useState("weekly");
   const [leaderboard, setLeaderboard] = useState<any[]>([]);
   const [team, setTeam] = useState<any[]>([]);
@@ -65,6 +68,23 @@ export function LeaderboardModule({ user }: Props) {
   const [kudosOpen, setKudosOpen] = useState(false);
   const [kudosTo, setKudosTo] = useState("");
   const [kudosReason, setKudosReason] = useState("");
+
+  const roleLabels: Record<string, string> = {
+    TEAM_LEADER: t("role.team_leader"),
+    SENIOR_MARKETER: t("role.senior_marketer"),
+    MARKETING_SPECIALIST: t("role.marketing_specialist"),
+    JUNIOR_MARKETER: t("role.junior_marketer"),
+    GUEST: t("role.guest"),
+  };
+  const deptLabels: Record<string, string> = {
+    SOCIAL_MEDIA: t("dept.social_media"),
+    CONTENT_CREATION: t("dept.content_creation"),
+    SEO_ANALYTICS: t("dept.seo_analytics"),
+    PAID_ADS: t("dept.paid_ads"),
+    EMAIL_MARKETING: t("dept.email_marketing"),
+    GENERAL: t("dept.general"),
+  };
+  const timeAgo = lang === "ar" ? timeAgoArabic : timeAgoEnglish;
 
   useEffect(() => {
     loadLeaderboard();
@@ -98,7 +118,7 @@ export function LeaderboardModule({ user }: Props) {
   const handleSendKudos = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!kudosTo || !kudosReason) {
-      toast.error("يرجى اختيار عضو وكتابة سبب");
+      toast.error(t("leaderboard.kudosFillRequired"));
       return;
     }
     try {
@@ -112,20 +132,25 @@ export function LeaderboardModule({ user }: Props) {
         toast.error(data.error);
         return;
       }
-      toast.success(`تم إرسال التقدير • +${data.points} نقطة لـ ${data.kudos.to.name}`);
+      toast.success(
+        t("leaderboard.kudosSent", {
+          points: data.points,
+          name: data.kudos.to.name,
+        })
+      );
       setKudosOpen(false);
       setKudosTo("");
       setKudosReason("");
       loadKudos();
     } catch {
-      toast.error("فشل إرسال التقدير");
+      toast.error(t("leaderboard.kudosFailed"));
     }
   };
 
   const periodLabels: Record<string, string> = {
-    weekly: "هذا الأسبوع",
-    monthly: "هذا الشهر",
-    total: "الكل",
+    weekly: t("leaderboard.period.weekly"),
+    monthly: t("leaderboard.period.monthly"),
+    total: t("leaderboard.period.total"),
   };
 
   return (
@@ -133,10 +158,10 @@ export function LeaderboardModule({ user }: Props) {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl lg:text-3xl font-bold text-emerald-900">
-            لوحة المتصدرين
+            {t("leaderboard.title")}
           </h1>
           <p className="text-muted-foreground mt-1">
-            أفضل الأعضاء أداءً هذا الأسبوع
+            {t("leaderboard.subtitle")}
           </p>
         </div>
 
@@ -144,22 +169,22 @@ export function LeaderboardModule({ user }: Props) {
           <DialogTrigger asChild>
             <Button className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600">
               <Heart className="w-4 h-4 ml-2" />
-              إرسال تقدير
+              {t("leaderboard.sendKudos")}
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>إرسال تقدير لزميل</DialogTitle>
+              <DialogTitle>{t("leaderboard.kudosTitle")}</DialogTitle>
               <DialogDescription>
-                اعترف بعمل زميلك الممتاز. سيحصل على نقطتين إضافيتين.
+                {t("leaderboard.kudosDesc")}
               </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleSendKudos} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="kudosTo">الزميل</Label>
+                <Label htmlFor="kudosTo">{t("leaderboard.kudosTo")}</Label>
                 <Select value={kudosTo} onValueChange={setKudosTo}>
                   <SelectTrigger>
-                    <SelectValue placeholder="اختر زميلًا" />
+                    <SelectValue placeholder={t("leaderboard.kudosTo.placeholder")} />
                   </SelectTrigger>
                   <SelectContent>
                     {team.map((m) => (
@@ -171,12 +196,14 @@ export function LeaderboardModule({ user }: Props) {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="kudosReason">السبب</Label>
+                <Label htmlFor="kudosReason">
+                  {t("leaderboard.kudosReason")}
+                </Label>
                 <Textarea
                   id="kudosReason"
                   value={kudosReason}
                   onChange={(e) => setKudosReason(e.target.value)}
-                  placeholder="مثال: شكرًا على مساعدتك في حملة الأمس، كان عملك رائعًا!"
+                  placeholder={t("leaderboard.kudosReason.placeholder")}
                   rows={3}
                   required
                 />
@@ -187,11 +214,11 @@ export function LeaderboardModule({ user }: Props) {
                   variant="outline"
                   onClick={() => setKudosOpen(false)}
                 >
-                  إلغاء
+                  {t("common.cancel")}
                 </Button>
                 <Button type="submit">
                   <Send className="w-4 h-4 ml-2" />
-                  إرسال
+                  {t("leaderboard.kudosSend")}
                 </Button>
               </DialogFooter>
             </form>
@@ -201,9 +228,9 @@ export function LeaderboardModule({ user }: Props) {
 
       <Tabs value={period} onValueChange={setPeriod}>
         <TabsList className="grid w-full max-w-md grid-cols-3">
-          <TabsTrigger value="weekly">أسبوعي</TabsTrigger>
-          <TabsTrigger value="monthly">شهري</TabsTrigger>
-          <TabsTrigger value="total">الكل</TabsTrigger>
+          <TabsTrigger value="weekly">{t("leaderboard.weekly")}</TabsTrigger>
+          <TabsTrigger value="monthly">{t("leaderboard.monthly")}</TabsTrigger>
+          <TabsTrigger value="total">{t("leaderboard.total")}</TabsTrigger>
         </TabsList>
 
         <TabsContent value={period} className="mt-4">
@@ -215,15 +242,15 @@ export function LeaderboardModule({ user }: Props) {
             <Card>
               <CardContent className="py-12 text-center">
                 <Trophy className="w-12 h-12 text-muted-foreground/30 mx-auto mb-3" />
-                <p className="text-muted-foreground">لا توجد بيانات بعد</p>
+                <p className="text-muted-foreground">
+                  {t("leaderboard.noData")}
+                </p>
               </CardContent>
             </Card>
           ) : (
             <div className="space-y-3">
-              {/* Top 3 Podium */}
               {leaderboard.length >= 1 && (
                 <div className="grid grid-cols-3 gap-2 mb-6">
-                  {/* 2nd place */}
                   {leaderboard[1] && (
                     <PodiumCard
                       member={leaderboard[1]}
@@ -235,9 +262,9 @@ export function LeaderboardModule({ user }: Props) {
                           ? leaderboard[1].monthlyPoints
                           : leaderboard[1].totalPoints
                       }
+                      t={t}
                     />
                   )}
-                  {/* 1st place */}
                   {leaderboard[0] && (
                     <PodiumCard
                       member={leaderboard[0]}
@@ -249,9 +276,9 @@ export function LeaderboardModule({ user }: Props) {
                           ? leaderboard[0].monthlyPoints
                           : leaderboard[0].totalPoints
                       }
+                      t={t}
                     />
                   )}
-                  {/* 3rd place */}
                   {leaderboard[2] && (
                     <PodiumCard
                       member={leaderboard[2]}
@@ -263,17 +290,19 @@ export function LeaderboardModule({ user }: Props) {
                           ? leaderboard[2].monthlyPoints
                           : leaderboard[2].totalPoints
                       }
+                      t={t}
                     />
                   )}
                 </div>
               )}
 
-              {/* Rest of the list */}
               {leaderboard.slice(3).length > 0 && (
                 <Card>
                   <CardHeader>
                     <CardTitle className="text-base">
-                      باقي المتصدرين — {periodLabels[period]}
+                      {t("leaderboard.restTitle", {
+                        period: periodLabels[period],
+                      })}
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
@@ -305,14 +334,14 @@ export function LeaderboardModule({ user }: Props) {
                             <div className="flex-1 min-w-0">
                               <p className="font-medium text-sm">{m.name}</p>
                               <p className="text-xs text-muted-foreground">
-                                {DEPARTMENT_LABELS[m.department]}
+                                {deptLabels[m.department]}
                               </p>
                             </div>
                             <Badge
                               variant="outline"
                               className={ROLE_COLORS[m.role]}
                             >
-                              {ROLE_LABELS[m.role]}
+                              {roleLabels[m.role]}
                             </Badge>
                             <span className="font-bold text-amber-600">
                               {points}
@@ -334,14 +363,16 @@ export function LeaderboardModule({ user }: Props) {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Heart className="w-5 h-5 text-pink-500" />
-            أحدث التقديرات
+            {t("leaderboard.recentKudos")}
           </CardTitle>
-          <CardDescription>تقدير الأعضاء لبعضهم البعض</CardDescription>
+          <CardDescription>
+            {t("leaderboard.recentKudosDesc")}
+          </CardDescription>
         </CardHeader>
         <CardContent>
           {kudos.length === 0 ? (
             <p className="text-center text-muted-foreground py-6">
-              لا توجد تقديرات بعد. كن أول من يقدر زميله!
+              {t("leaderboard.noKudos")}
             </p>
           ) : (
             <div className="space-y-3 max-h-96 overflow-y-auto">
@@ -361,15 +392,17 @@ export function LeaderboardModule({ user }: Props) {
                   </Avatar>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm">
-                      <strong>{k.from.name}</strong> أرسل تقديرًا إلى{" "}
-                      <strong>{k.to.name}</strong>
+                      {t("leaderboard.kudosFromTo", {
+                        from: k.from.name,
+                        to: k.to.name,
+                      })}
                     </p>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      "{k.reason}"
+                      &ldquo;{k.reason}&rdquo;
                     </p>
                     <p className="text-xs text-pink-600 mt-1">
-                      <Star className="w-3 h-3 inline ml-1" />
-                      +{k.points} نقطة • {timeAgoArabic(k.createdAt)}
+                      <Star className="w-3 h-3 inline ml-1" />+{k.points}{" "}
+                      {t("leaderboard.points")} • {timeAgo(k.createdAt)}
                     </p>
                   </div>
                 </div>
@@ -386,45 +419,35 @@ function PodiumCard({
   member,
   rank,
   points,
+  t,
 }: {
   member: any;
   rank: number;
   points: number;
+  t: (key: string, vars?: any) => string;
 }) {
-  const config: Record<
-    number,
-    { bg: string; border: string; icon: any; label: string }
-  > = {
+  const config: Record<number, { bg: string; border: string }> = {
     1: {
       bg: "bg-gradient-to-b from-amber-50 to-amber-100",
       border: "border-amber-300",
-      icon: Medal,
-      label: "المركز الأول",
     },
     2: {
       bg: "bg-gradient-to-b from-slate-50 to-slate-100",
       border: "border-slate-300",
-      icon: Medal,
-      label: "المركز الثاني",
     },
     3: {
       bg: "bg-gradient-to-b from-orange-50 to-orange-100",
       border: "border-orange-300",
-      icon: Medal,
-      label: "المركز الثالث",
     },
   };
   const c = config[rank];
-  const Icon = c.icon;
 
   return (
     <Card
-      className={`${c.bg} ${c.border} ${
-        rank === 1 ? "scale-105" : ""
-      } text-center`}
+      className={`${c.bg} ${c.border} ${rank === 1 ? "scale-105" : ""} text-center`}
     >
       <CardContent className="pt-4 pb-4">
-        <Icon
+        <Medal
           className={`w-7 h-7 mx-auto mb-2 ${
             rank === 1
               ? "text-amber-500"
@@ -443,7 +466,9 @@ function PodiumCard({
           </AvatarFallback>
         </Avatar>
         <p className="font-semibold text-xs truncate">{member.name}</p>
-        <p className="text-xs text-muted-foreground mt-1">{points} نقطة</p>
+        <p className="text-xs text-muted-foreground mt-1">
+          {points} {t("leaderboard.points")}
+        </p>
       </CardContent>
     </Card>
   );

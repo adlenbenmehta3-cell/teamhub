@@ -31,14 +31,12 @@ import {
 } from "@/components/ui/dialog";
 import { CheckSquare, Plus, Clock, AlertCircle, Check } from "lucide-react";
 import { toast } from "sonner";
+import { useLanguage } from "@/components/language-provider";
 import {
   PRIORITY_COLORS,
   STATUS_COLORS,
-  TASK_PRIORITY_LABELS,
-  TASK_STATUS_LABELS,
-  DEPARTMENT_LABELS,
   formatArabicDateTime,
-  formatArabicDate,
+  formatEnglishDateTime,
 } from "@/lib/auth-labels";
 import type { User } from "@/app/page";
 
@@ -47,6 +45,7 @@ interface Props {
 }
 
 export function TasksModule({ user }: Props) {
+  const { t, lang } = useLanguage();
   const [tasks, setTasks] = useState<any[]>([]);
   const [team, setTeam] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -54,12 +53,24 @@ export function TasksModule({ user }: Props) {
   const [createOpen, setCreateOpen] = useState(false);
   const isTL = user.role === "TEAM_LEADER";
 
-  // Form state
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [deadline, setDeadline] = useState("");
   const [priority, setPriority] = useState("MEDIUM");
   const [assigneeId, setAssigneeId] = useState("");
+
+  const priorityLabels: Record<string, string> = {
+    LOW: t("tasks.priority.low"),
+    MEDIUM: t("tasks.priority.medium"),
+    HIGH: t("tasks.priority.high"),
+    URGENT: t("tasks.priority.urgent"),
+  };
+  const statusLabels: Record<string, string> = {
+    OPEN: t("tasks.status.open"),
+    IN_PROGRESS: t("tasks.status.in_progress"),
+    COMPLETED: t("tasks.status.completed"),
+    CANCELLED: t("tasks.status.cancelled"),
+  };
 
   useEffect(() => {
     loadTasks();
@@ -85,7 +96,7 @@ export function TasksModule({ user }: Props) {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title || !description || !deadline) {
-      toast.error("يرجى تعبئة جميع الحقول المطلوبة");
+      toast.error(t("tasks.fillRequired"));
       return;
     }
     try {
@@ -105,7 +116,7 @@ export function TasksModule({ user }: Props) {
         toast.error(data.error);
         return;
       }
-      toast.success("تم إنشاء المهمة بنجاح");
+      toast.success(t("tasks.created"));
       setCreateOpen(false);
       setTitle("");
       setDescription("");
@@ -114,7 +125,7 @@ export function TasksModule({ user }: Props) {
       setAssigneeId("");
       loadTasks();
     } catch {
-      toast.error("فشل إنشاء المهمة");
+      toast.error(t("tasks.createFailed"));
     }
   };
 
@@ -131,13 +142,13 @@ export function TasksModule({ user }: Props) {
         return;
       }
       toast.success(
-        `تم إتمام المهمة • +${data.points} نقطة${
-          data.early ? " (مكافأة إنجاز مبكر!)" : ""
-        }`
+        data.early
+          ? t("tasks.completedEarly", { points: data.points })
+          : t("tasks.completedMsg", { points: data.points })
       );
       loadTasks();
     } catch {
-      toast.error("فشل إتمام المهمة");
+      toast.error(t("tasks.completeFailed"));
     }
   };
 
@@ -153,10 +164,10 @@ export function TasksModule({ user }: Props) {
         toast.error(data.error);
         return;
       }
-      toast.success("تم إعادة تكليف المهمة");
+      toast.success(t("tasks.reassigned"));
       loadTasks();
     } catch {
-      toast.error("فشل إعادة التكليف");
+      toast.error(t("tasks.reassignFailed"));
     }
   };
 
@@ -169,71 +180,75 @@ export function TasksModule({ user }: Props) {
   }
 
   const now = new Date();
+  const formatDateTime =
+    lang === "ar" ? formatArabicDateTime : formatEnglishDateTime;
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl lg:text-3xl font-bold text-emerald-900">المهام</h1>
+          <h1 className="text-2xl lg:text-3xl font-bold text-emerald-900">
+            {t("tasks.title")}
+          </h1>
           <p className="text-muted-foreground mt-1">
-            {isTL ? "إدارة مهام الفريق" : "متابعة مهامك"}
+            {isTL ? t("tasks.subtitle.leader") : t("tasks.subtitle.member")}
           </p>
         </div>
 
         <div className="flex items-center gap-2">
-          {/* Filter */}
           <Select value={filter} onValueChange={setFilter}>
             <SelectTrigger className="w-32">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="open">المفتوحة</SelectItem>
-              <SelectItem value="completed">المكتملة</SelectItem>
-              <SelectItem value="all">الكل</SelectItem>
+              <SelectItem value="open">{t("tasks.open")}</SelectItem>
+              <SelectItem value="completed">{t("tasks.completed")}</SelectItem>
+              <SelectItem value="all">{t("tasks.all")}</SelectItem>
             </SelectContent>
           </Select>
 
-          {/* Create button (TL only) */}
           {isTL && (
             <Dialog open={createOpen} onOpenChange={setCreateOpen}>
               <DialogTrigger asChild>
                 <Button className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700">
                   <Plus className="w-4 h-4 ml-2" />
-                  مهمة جديدة
+                  {t("tasks.new")}
                 </Button>
               </DialogTrigger>
               <DialogContent className="max-w-lg">
                 <DialogHeader>
-                  <DialogTitle>إنشاء مهمة جديدة</DialogTitle>
-                  <DialogDescription>
-                    املأ التفاصيل ثم اضغط "إنشاء"
-                  </DialogDescription>
+                  <DialogTitle>{t("tasks.createTitle")}</DialogTitle>
+                  <DialogDescription>{t("tasks.createDesc")}</DialogDescription>
                 </DialogHeader>
                 <form onSubmit={handleCreate} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="title">العنوان *</Label>
+                    <Label htmlFor="title">{t("tasks.title.label")} *</Label>
                     <Input
                       id="title"
                       value={title}
                       onChange={(e) => setTitle(e.target.value)}
-                      placeholder="مثال: إعداد تقرير الأداء الأسبوعي"
+                      placeholder={t("tasks.title.placeholder")}
                       required
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="description">الوصف *</Label>
+                    <Label htmlFor="description">
+                      {t("tasks.description.label")} *
+                    </Label>
                     <Textarea
                       id="description"
                       value={description}
                       onChange={(e) => setDescription(e.target.value)}
-                      placeholder="تفاصيل المهمة..."
+                      placeholder={t("tasks.description.placeholder")}
                       rows={4}
                       required
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-2">
-                      <Label htmlFor="deadline">الموعد النهائي *</Label>
+                      <Label htmlFor="deadline">
+                        {t("tasks.deadline.label")} *
+                      </Label>
                       <Input
                         id="deadline"
                         type="datetime-local"
@@ -243,30 +258,38 @@ export function TasksModule({ user }: Props) {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="priority">الأولوية</Label>
+                      <Label htmlFor="priority">{t("tasks.priority.label")}</Label>
                       <Select value={priority} onValueChange={setPriority}>
                         <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="LOW">منخفضة</SelectItem>
-                          <SelectItem value="MEDIUM">متوسطة</SelectItem>
-                          <SelectItem value="HIGH">عالية</SelectItem>
-                          <SelectItem value="URGENT">عاجلة</SelectItem>
+                          <SelectItem value="LOW">
+                            {t("tasks.priority.low")}
+                          </SelectItem>
+                          <SelectItem value="MEDIUM">
+                            {t("tasks.priority.medium")}
+                          </SelectItem>
+                          <SelectItem value="HIGH">
+                            {t("tasks.priority.high")}
+                          </SelectItem>
+                          <SelectItem value="URGENT">
+                            {t("tasks.priority.urgent")}
+                          </SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="assignee">المكلّف</Label>
+                    <Label htmlFor="assignee">{t("tasks.assignee.label")}</Label>
                     <Select value={assigneeId} onValueChange={setAssigneeId}>
                       <SelectTrigger>
-                        <SelectValue placeholder="بدون تكليف" />
+                        <SelectValue placeholder={t("tasks.assignee.placeholder")} />
                       </SelectTrigger>
                       <SelectContent>
                         {team.map((m) => (
                           <SelectItem key={m.id} value={m.id}>
-                            {m.name} ({DEPARTMENT_LABELS[m.department]})
+                            {m.name}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -278,13 +301,13 @@ export function TasksModule({ user }: Props) {
                       variant="outline"
                       onClick={() => setCreateOpen(false)}
                     >
-                      إلغاء
+                      {t("common.cancel")}
                     </Button>
                     <Button
                       type="submit"
                       className="bg-gradient-to-r from-emerald-600 to-teal-600"
                     >
-                      إنشاء
+                      {t("tasks.create")}
                     </Button>
                   </DialogFooter>
                 </form>
@@ -294,17 +317,16 @@ export function TasksModule({ user }: Props) {
         </div>
       </div>
 
-      {/* Tasks List */}
       {tasks.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center">
             <CheckSquare className="w-12 h-12 text-muted-foreground/30 mx-auto mb-3" />
             <p className="text-muted-foreground">
               {filter === "open"
-                ? "لا توجد مهام مفتوحة"
+                ? t("tasks.noOpenTasks")
                 : filter === "completed"
-                ? "لا توجد مهام مكتملة"
-                : "لا توجد مهام"}
+                ? t("tasks.noCompletedTasks")
+                : t("tasks.noTasks")}
             </p>
           </CardContent>
         </Card>
@@ -336,41 +358,42 @@ export function TasksModule({ user }: Props) {
                             className="border-red-300 text-red-700 bg-red-50"
                           >
                             <AlertCircle className="w-3 h-3 ml-1" />
-                            متأخرة
+                            {t("tasks.overdue")}
                           </Badge>
                         )}
                         <Badge
                           variant="outline"
                           className={PRIORITY_COLORS[task.priority]}
                         >
-                          {TASK_PRIORITY_LABELS[task.priority]}
+                          {priorityLabels[task.priority]}
                         </Badge>
                         <Badge
                           variant="outline"
                           className={STATUS_COLORS[task.status]}
                         >
-                          {TASK_STATUS_LABELS[task.status]}
+                          {statusLabels[task.status]}
                         </Badge>
                       </div>
                       <h3 className="font-semibold text-emerald-900 mb-1">
                         {task.title}
                       </h3>
-                      <p className="text-sm text-muted-foreground mb-2 line-clamp-2">
+                      <p className="text-sm text-muted-foreground mb-2 line-clamp-2 whitespace-pre-line">
                         {task.description}
                       </p>
                       <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
                         <span className="flex items-center gap-1">
                           <Clock className="w-3 h-3" />
-                          {formatArabicDateTime(task.deadline)}
+                          {formatDateTime(task.deadline)}
                         </span>
                         {task.assignee && (
                           <span>
-                            المكلّف: <strong>{task.assignee.name}</strong>
+                            {t("tasks.assignee")}:{" "}
+                            <strong>{task.assignee.name}</strong>
                           </span>
                         )}
                         {task.creator && (
                           <span>
-                            أنشأها: {task.creator.name}
+                            {t("tasks.createdBy")}: {task.creator.name}
                           </span>
                         )}
                       </div>
@@ -384,7 +407,7 @@ export function TasksModule({ user }: Props) {
                           className="bg-emerald-600 hover:bg-emerald-700"
                         >
                           <Check className="w-3.5 h-3.5 ml-1" />
-                          إتمام
+                          {t("tasks.complete")}
                         </Button>
                       )}
                       {isTL && task.status === "OPEN" && (
@@ -393,7 +416,7 @@ export function TasksModule({ user }: Props) {
                           onValueChange={(v) => handleAssign(task.id, v)}
                         >
                           <SelectTrigger className="w-40 h-8 text-xs">
-                            <SelectValue placeholder="إعادة تكليف" />
+                            <SelectValue placeholder={t("tasks.reassign")} />
                           </SelectTrigger>
                           <SelectContent>
                             {team.map((m) => (

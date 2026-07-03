@@ -19,7 +19,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { ROLE_LABELS } from "@/lib/auth-labels";
+import { useLanguage } from "@/components/language-provider";
+import { LanguageSwitcher } from "@/components/language-switcher";
 import { Dashboard } from "@/components/modules/dashboard";
 import { AttendanceModule } from "@/components/modules/attendance";
 import { TasksModule } from "@/components/modules/tasks";
@@ -38,22 +39,8 @@ interface Props {
   onLogout: () => void;
 }
 
-const NAV_ITEMS = [
-  { id: "dashboard", label: "الرئيسية", icon: LayoutDashboard },
-  { id: "attendance", label: "الحضور", icon: Clock },
-  { id: "tasks", label: "المهام", icon: CheckSquare },
-  { id: "reports", label: "التقارير", icon: FileText },
-  { id: "meetings", label: "الاجتماعات", icon: Calendar },
-  { id: "leaderboard", label: "المتصدرون", icon: Trophy },
-  { id: "kb", label: "قاعدة المعرفة", icon: BookOpen },
-  { id: "announcements", label: "الإعلانات", icon: Megaphone },
-];
-
-const TL_ONLY_ITEMS = [
-  { id: "team", label: "إدارة الفريق", icon: Users },
-];
-
 export function AppShell({ user, activeTab, onTabChange, onLogout }: Props) {
+  const { t, lang } = useLanguage();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const isTL = user.role === "TEAM_LEADER";
 
@@ -62,6 +49,21 @@ export function AppShell({ user, activeTab, onTabChange, onLogout }: Props) {
     .slice(0, 2)
     .map((s) => s[0])
     .join("");
+
+  const NAV_ITEMS = [
+    { id: "dashboard", label: t("nav.dashboard"), icon: LayoutDashboard },
+    { id: "attendance", label: t("nav.attendance"), icon: Clock },
+    { id: "tasks", label: t("nav.tasks"), icon: CheckSquare },
+    { id: "reports", label: t("nav.reports"), icon: FileText },
+    { id: "meetings", label: t("nav.meetings"), icon: Calendar },
+    { id: "leaderboard", label: t("nav.leaderboard"), icon: Trophy },
+    { id: "kb", label: t("nav.kb"), icon: BookOpen },
+    { id: "announcements", label: t("nav.announcements"), icon: Megaphone },
+  ];
+
+  const TL_ONLY_ITEMS = [
+    { id: "team", label: t("nav.team"), icon: Users },
+  ];
 
   const navItems = [...NAV_ITEMS, ...(isTL ? TL_ONLY_ITEMS : [])];
 
@@ -90,6 +92,9 @@ export function AppShell({ user, activeTab, onTabChange, onLogout }: Props) {
     }
   };
 
+  const sidebarSide = lang === "ar" ? "right-0 border-l" : "left-0 border-r";
+  const mainSide = lang === "ar" ? "lg:mr-64" : "lg:ml-64";
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50/30 via-white to-teal-50/30">
       {/* Mobile Header */}
@@ -108,15 +113,20 @@ export function AppShell({ user, activeTab, onTabChange, onLogout }: Props) {
           </div>
           <span className="font-bold text-emerald-900">TeamHub</span>
         </div>
-        <Avatar className="w-8 h-8 border-2 border-emerald-200">
-          <AvatarFallback className="bg-emerald-100 text-emerald-700 text-xs font-bold">
-            {initials}
-          </AvatarFallback>
-        </Avatar>
+        <div className="flex items-center gap-1">
+          <LanguageSwitcher />
+          <Avatar className="w-8 h-8 border-2 border-emerald-200">
+            <AvatarFallback className="bg-emerald-100 text-emerald-700 text-xs font-bold">
+              {initials}
+            </AvatarFallback>
+          </Avatar>
+        </div>
       </header>
 
       {/* Sidebar — Desktop */}
-      <aside className="hidden lg:flex fixed inset-y-0 right-0 w-64 bg-white border-l border-emerald-100 flex-col z-20">
+      <aside
+        className={`hidden lg:flex fixed inset-y-0 ${sidebarSide} w-64 bg-white border-emerald-100 flex-col z-20`}
+      >
         <SidebarContent
           user={user}
           initials={initials}
@@ -134,9 +144,13 @@ export function AppShell({ user, activeTab, onTabChange, onLogout }: Props) {
             className="absolute inset-0 bg-black/40 backdrop-blur-sm"
             onClick={() => setSidebarOpen(false)}
           />
-          <aside className="absolute inset-y-0 right-0 w-72 bg-white shadow-2xl flex flex-col">
+          <aside
+            className={`absolute inset-y-0 ${sidebarSide} w-72 bg-white shadow-2xl flex flex-col`}
+          >
             <div className="flex justify-between items-center p-4 border-b border-emerald-100">
-              <span className="font-bold text-emerald-900">القائمة</span>
+              <span className="font-bold text-emerald-900">
+                {t("nav.menu")}
+              </span>
               <Button
                 variant="ghost"
                 size="icon"
@@ -151,8 +165,8 @@ export function AppShell({ user, activeTab, onTabChange, onLogout }: Props) {
               initials={initials}
               navItems={navItems}
               activeTab={activeTab}
-              onTabChange={(t) => {
-                onTabChange(t);
+              onTabChange={(tab) => {
+                onTabChange(tab);
                 setSidebarOpen(false);
               }}
               onLogout={onLogout}
@@ -162,7 +176,7 @@ export function AppShell({ user, activeTab, onTabChange, onLogout }: Props) {
       )}
 
       {/* Main Content */}
-      <main className="lg:mr-64 min-h-screen flex flex-col">
+      <main className={`${mainSide} min-h-screen flex flex-col`}>
         <div className="flex-1 p-4 lg:p-8 max-w-7xl w-full mx-auto">
           {renderContent()}
         </div>
@@ -170,8 +184,8 @@ export function AppShell({ user, activeTab, onTabChange, onLogout }: Props) {
         {/* Footer */}
         <footer className="mt-auto border-t border-emerald-100 bg-white/50 backdrop-blur py-4 px-4 lg:px-8">
           <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-muted-foreground">
-            <span>© 2026 TeamHub — منصة إدارة فريق التسويق</span>
-            <span>صُنع بحب لقادة الفرق</span>
+            <span>© 2026 TeamHub — {lang === "ar" ? "منصة إدارة فريق التسويق" : "Marketing Team Management"}</span>
+            <span>{lang === "ar" ? "صُنع بحب لقادة الفرق" : "Made with love for team leaders"}</span>
           </div>
         </footer>
       </main>
@@ -194,6 +208,15 @@ function SidebarContent({
   onTabChange: (tab: string) => void;
   onLogout: () => void;
 }) {
+  const { t, lang } = useLanguage();
+  const roleLabels: Record<string, string> = {
+    TEAM_LEADER: t("role.team_leader"),
+    SENIOR_MARKETER: t("role.senior_marketer"),
+    MARKETING_SPECIALIST: t("role.marketing_specialist"),
+    JUNIOR_MARKETER: t("role.junior_marketer"),
+    GUEST: t("role.guest"),
+  };
+
   return (
     <>
       {/* Logo */}
@@ -203,8 +226,12 @@ function SidebarContent({
             <Users className="w-6 h-6 text-white" />
           </div>
           <div>
-            <h1 className="font-bold text-emerald-900 text-lg leading-tight">TeamHub</h1>
-            <p className="text-xs text-emerald-600">إدارة فريق التسويق</p>
+            <h1 className="font-bold text-emerald-900 text-lg leading-tight">
+              TeamHub
+            </h1>
+            <p className="text-xs text-emerald-600">
+              {lang === "ar" ? "إدارة فريق التسويق" : "Marketing Team Hub"}
+            </p>
           </div>
         </div>
       </div>
@@ -218,8 +245,12 @@ function SidebarContent({
             </AvatarFallback>
           </Avatar>
           <div className="flex-1 min-w-0">
-            <p className="font-semibold text-sm text-emerald-900 truncate">{user.name}</p>
-            <p className="text-xs text-muted-foreground truncate" dir="ltr">{user.email}</p>
+            <p className="font-semibold text-sm text-emerald-900 truncate">
+              {user.name}
+            </p>
+            <p className="text-xs text-muted-foreground truncate" dir="ltr">
+              {user.email}
+            </p>
           </div>
         </div>
         <div className="mt-3 flex items-center justify-between">
@@ -227,12 +258,15 @@ function SidebarContent({
             variant="outline"
             className="bg-emerald-50 text-emerald-700 border-emerald-200 text-xs"
           >
-            {ROLE_LABELS[user.role] || user.role}
+            {roleLabels[user.role] || user.role}
           </Badge>
           <span className="text-xs text-amber-600 font-semibold flex items-center gap-1">
             <Trophy className="w-3 h-3" />
-            {user.totalPoints} نقطة
+            {user.totalPoints} {lang === "ar" ? "نقطة" : "pts"}
           </span>
+        </div>
+        <div className="mt-3 flex justify-center">
+          <LanguageSwitcher />
         </div>
       </div>
 
@@ -248,11 +282,15 @@ function SidebarContent({
                   onClick={() => onTabChange(item.id)}
                   className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
                     active
-                      ? "bg-gradient-to-l from-emerald-500 to-teal-600 text-white shadow-md shadow-emerald-200"
+                      ? lang === "ar"
+                        ? "bg-gradient-to-l from-emerald-500 to-teal-600 text-white shadow-md shadow-emerald-200"
+                        : "bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-md shadow-emerald-200"
                       : "text-emerald-900 hover:bg-emerald-50"
                   }`}
                 >
-                  <Icon className={`w-4 h-4 ${active ? "text-white" : "text-emerald-600"}`} />
+                  <Icon
+                    className={`w-4 h-4 ${active ? "text-white" : "text-emerald-600"}`}
+                  />
                   <span className="flex-1 text-right">{item.label}</span>
                 </button>
               </li>
@@ -269,7 +307,7 @@ function SidebarContent({
           onClick={onLogout}
         >
           <LogOut className="w-4 h-4 ml-2" />
-          تسجيل الخروج
+          {t("logout.button")}
         </Button>
       </div>
     </>

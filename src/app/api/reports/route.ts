@@ -45,13 +45,29 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { completed, inProgress, blockers, tomorrow } = body;
+    const { completed, inProgress, blockers, tomorrow, driveLink } = body;
 
     if (!completed || !inProgress) {
       return NextResponse.json(
         { error: "الحقول المكتملة وقيد التقدم مطلوبة" },
         { status: 400 }
       );
+    }
+
+    // Validate driveLink if provided
+    let normalizedDriveLink: string | null = null;
+    if (driveLink && driveLink.trim()) {
+      const trimmed = driveLink.trim();
+      // Basic URL validation
+      try {
+        new URL(trimmed);
+        normalizedDriveLink = trimmed;
+      } catch {
+        return NextResponse.json(
+          { error: "رابط Google Drive غير صالح" },
+          { status: 400 }
+        );
+      }
     }
 
     const today = formatDate(new Date());
@@ -70,6 +86,7 @@ export async function POST(req: NextRequest) {
           inProgress,
           blockers: blockers || "لا يوجد",
           tomorrow: tomorrow || "—",
+          driveLink: normalizedDriveLink,
         },
       });
       return NextResponse.json({
@@ -87,6 +104,7 @@ export async function POST(req: NextRequest) {
         inProgress,
         blockers: blockers || "لا يوجد",
         tomorrow: tomorrow || "—",
+        driveLink: normalizedDriveLink,
       },
     });
 

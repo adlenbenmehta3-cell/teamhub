@@ -2,8 +2,8 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { LoginScreen } from "@/components/login-screen";
-import { Dashboard } from "@/components/dashboard";
 import { AppShell } from "@/components/app-shell";
+import { useLanguage } from "@/components/language-provider";
 import { toast } from "sonner";
 
 export type User = {
@@ -20,6 +20,7 @@ export type User = {
 };
 
 export default function Home() {
+  const { t } = useLanguage();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -56,7 +57,7 @@ export default function Home() {
     }
     setUser(null);
     setActiveTab("dashboard");
-    toast.success("تم تسجيل الخروج بنجاح");
+    toast.success(t("logout.success"));
   };
 
   if (loading) {
@@ -64,7 +65,9 @@ export default function Home() {
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-emerald-50 via-white to-teal-50">
         <div className="flex flex-col items-center gap-3">
           <div className="w-12 h-12 rounded-full border-4 border-emerald-200 border-t-emerald-600 animate-spin" />
-          <p className="text-emerald-700 text-sm font-medium">جاري التحميل...</p>
+          <p className="text-emerald-700 text-sm font-medium">
+            {t("app.loading")}
+          </p>
         </div>
       </div>
     );

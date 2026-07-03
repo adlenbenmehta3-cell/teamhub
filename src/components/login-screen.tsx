@@ -4,9 +4,17 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Users, LogIn, Sparkles } from "lucide-react";
 import { toast } from "sonner";
+import { useLanguage } from "@/components/language-provider";
+import { LanguageSwitcher } from "@/components/language-switcher";
 import type { User } from "@/app/page";
 
 interface Props {
@@ -14,6 +22,7 @@ interface Props {
 }
 
 export function LoginScreen({ onLogin }: Props) {
+  const { t, lang } = useLanguage();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -22,7 +31,7 @@ export function LoginScreen({ onLogin }: Props) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) {
-      toast.error("يرجى إدخال البريد وكلمة المرور");
+      toast.error(t("login.emailRequired"));
       return;
     }
 
@@ -36,14 +45,14 @@ export function LoginScreen({ onLogin }: Props) {
       const data = await res.json();
 
       if (!res.ok) {
-        toast.error(data.error || "فشل تسجيل الدخول");
+        toast.error(data.error || t("login.loginError"));
         return;
       }
 
-      toast.success(`مرحبًا بك، ${data.user.name}!`);
+      toast.success(t("login.welcome", { name: data.user.name }));
       onLogin(data.user);
-    } catch (e) {
-      toast.error("حدث خطأ في الاتصال");
+    } catch {
+      toast.error(t("login.loginError"));
     } finally {
       setLoading(false);
     }
@@ -58,19 +67,32 @@ export function LoginScreen({ onLogin }: Props) {
         toast.error(data.error);
         return;
       }
-      toast.success("تم إنشاء البيانات التجريبية! استخدم البيانات أدناه للدخول");
+      toast.success(
+        lang === "ar"
+          ? "تم إنشاء البيانات التجريبية! استخدم البيانات أدناه للدخول"
+          : "Demo data created! Use the credentials below to log in"
+      );
       setEmail("leader@team.com");
       setPassword("leader123");
       setShowSeed(false);
     } catch {
-      toast.error("فشل إنشاء البيانات التجريبية");
+      toast.error(
+        lang === "ar"
+          ? "فشل إنشاء البيانات التجريبية"
+          : "Failed to create demo data"
+      );
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-emerald-50 via-white to-teal-50 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-emerald-50 via-white to-teal-50 p-4 relative">
+      {/* Language switcher top-right */}
+      <div className="absolute top-4 right-4">
+        <LanguageSwitcher />
+      </div>
+
       <div className="w-full max-w-md">
         {/* Logo / Header */}
         <div className="flex flex-col items-center mb-8">
@@ -78,18 +100,18 @@ export function LoginScreen({ onLogin }: Props) {
             <Users className="w-9 h-9 text-white" />
           </div>
           <h1 className="mt-4 text-3xl font-bold text-emerald-900">TeamHub</h1>
-          <p className="mt-1 text-sm text-emerald-600">منصة إدارة فريق التسويق</p>
+          <p className="mt-1 text-sm text-emerald-600">{t("app.tagline")}</p>
         </div>
 
         <Card className="border-emerald-100 shadow-xl shadow-emerald-100/50">
           <CardHeader>
-            <CardTitle className="text-2xl">تسجيل الدخول</CardTitle>
-            <CardDescription>أدخل بياناتك للوصول إلى لوحة التحكم</CardDescription>
+            <CardTitle className="text-2xl">{t("login.title")}</CardTitle>
+            <CardDescription>{t("login.subtitle")}</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="email">البريد الإلكتروني</Label>
+                <Label htmlFor="email">{t("login.email")}</Label>
                 <Input
                   id="email"
                   type="email"
@@ -103,7 +125,7 @@ export function LoginScreen({ onLogin }: Props) {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="password">كلمة المرور</Label>
+                <Label htmlFor="password">{t("login.password")}</Label>
                 <Input
                   id="password"
                   type="password"
@@ -124,12 +146,12 @@ export function LoginScreen({ onLogin }: Props) {
                 {loading ? (
                   <span className="flex items-center gap-2">
                     <span className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
-                    جاري الدخول...
+                    {t("login.submitting")}
                   </span>
                 ) : (
                   <span className="flex items-center gap-2">
                     <LogIn className="w-4 h-4" />
-                    دخول
+                    {t("login.submit")}
                   </span>
                 )}
               </Button>
@@ -145,12 +167,12 @@ export function LoginScreen({ onLogin }: Props) {
                   disabled={loading}
                 >
                   <Sparkles className="w-4 h-4 ml-2" />
-                  أول مرة؟ أنشئ بيانات تجريبية
+                  {t("login.firstTime")}
                 </Button>
               ) : (
                 <div className="space-y-3">
                   <p className="text-xs text-muted-foreground text-center">
-                    سيؤدي هذا إلى إنشاء قائد فريق + 5 أعضاء، مهام، إعلان ترحيبي، واجتماع أسبوعي.
+                    {t("login.demoDesc")}
                   </p>
                   <Button
                     variant="outline"
@@ -159,14 +181,14 @@ export function LoginScreen({ onLogin }: Props) {
                     disabled={loading}
                   >
                     <Sparkles className="w-4 h-4 ml-2" />
-                    إنشاء البيانات التجريبية
+                    {t("login.createDemo")}
                   </Button>
                   <Button
                     variant="ghost"
                     className="w-full text-xs"
                     onClick={() => setShowSeed(false)}
                   >
-                    إلغاء
+                    {t("login.cancel")}
                   </Button>
                 </div>
               )}
@@ -175,7 +197,7 @@ export function LoginScreen({ onLogin }: Props) {
         </Card>
 
         <p className="mt-6 text-center text-xs text-muted-foreground">
-          © 2026 TeamHub — جميع الحقوق محفوظة
+          {t("login.copyright")}
         </p>
       </div>
     </div>

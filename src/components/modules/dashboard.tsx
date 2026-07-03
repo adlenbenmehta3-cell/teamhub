@@ -22,13 +22,17 @@ import {
   TrendingUp,
   Megaphone,
   ArrowLeft,
+  ArrowRight,
   Pin,
 } from "lucide-react";
+import { useLanguage } from "@/components/language-provider";
 import {
   ROLE_LABELS,
   DEPARTMENT_LABELS,
   formatArabicDateTime,
+  formatEnglishDateTime,
   timeAgoArabic,
+  timeAgoEnglish,
 } from "@/lib/auth-labels";
 import type { User } from "@/app/page";
 
@@ -38,6 +42,7 @@ interface Props {
 }
 
 export function Dashboard({ user, onNavigate }: Props) {
+  const { t, lang } = useLanguage();
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
@@ -69,19 +74,43 @@ export function Dashboard({ user, onNavigate }: Props) {
   const stats = data.stats;
   const hour = new Date().getHours();
   const greeting =
-    hour < 12 ? "صباح الخير" : hour < 18 ? "مساء الخير" : "مساء الخير";
+    hour < 12
+      ? t("greeting.morning")
+      : hour < 18
+      ? t("greeting.afternoon")
+      : t("greeting.evening");
+
+  const ArrowIcon = lang === "ar" ? ArrowLeft : ArrowRight;
+  const roleLabels: Record<string, string> = {
+    TEAM_LEADER: t("role.team_leader"),
+    SENIOR_MARKETER: t("role.senior_marketer"),
+    MARKETING_SPECIALIST: t("role.marketing_specialist"),
+    JUNIOR_MARKETER: t("role.junior_marketer"),
+    GUEST: t("role.guest"),
+  };
+  const deptLabels: Record<string, string> = {
+    SOCIAL_MEDIA: t("dept.social_media"),
+    CONTENT_CREATION: t("dept.content_creation"),
+    SEO_ANALYTICS: t("dept.seo_analytics"),
+    PAID_ADS: t("dept.paid_ads"),
+    EMAIL_MARKETING: t("dept.email_marketing"),
+    GENERAL: t("dept.general"),
+  };
+  const timeAgo = lang === "ar" ? timeAgoArabic : timeAgoEnglish;
+  const formatDateTime =
+    lang === "ar" ? formatArabicDateTime : formatEnglishDateTime;
 
   return (
     <div className="space-y-6">
       {/* Greeting */}
       <div>
         <h1 className="text-2xl lg:text-3xl font-bold text-emerald-900">
-          {greeting}، {user.name} 👋
+          {greeting}, {user.name} 👋
         </h1>
         <p className="text-muted-foreground mt-1">
           {isTL
-            ? "نظرة عامة على حالة الفريق اليوم"
-            : "نظرة عامة على نشاطك اليوم"}
+            ? t("dashboard.title.teamLeader")
+            : t("dashboard.title.member")}
         </p>
       </div>
 
@@ -89,30 +118,30 @@ export function Dashboard({ user, onNavigate }: Props) {
       {isTL ? (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard
-            title="أعضاء الفريق"
+            title={t("dashboard.teamMembers")}
             value={stats.totalMembers}
             icon={Users}
             color="emerald"
             onClick={() => onNavigate("team")}
           />
           <StatCard
-            title="الحضور اليوم"
+            title={t("dashboard.todayAttendance")}
             value={`${stats.todayAttendance}/${stats.totalMembers}`}
-            subtitle={`${stats.todayLate} متأخر`}
+            subtitle={`${stats.todayLate} ${t("dashboard.late")}`}
             icon={Clock}
             color="teal"
             onClick={() => onNavigate("attendance")}
           />
           <StatCard
-            title="المهام المفتوحة"
+            title={t("dashboard.openTasks")}
             value={stats.openTasks}
-            subtitle={`${stats.overdueTasks} متأخرة`}
+            subtitle={`${stats.overdueTasks} ${t("dashboard.overdueTasks")}`}
             icon={CheckSquare}
             color="amber"
             onClick={() => onNavigate("tasks")}
           />
           <StatCard
-            title="تقارير اليوم"
+            title={t("dashboard.todayReports")}
             value={`${stats.todayReports}/${stats.totalMembers}`}
             icon={FileText}
             color="blue"
@@ -122,30 +151,40 @@ export function Dashboard({ user, onNavigate }: Props) {
       ) : (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard
-            title="حالة الحضور"
-            value={stats.checkedInToday ? "مسجّل" : "لم يُسجّل"}
-            subtitle={stats.isLate ? "متأخر" : "في الوقت"}
+            title={t("dashboard.attendanceStatus")}
+            value={
+              stats.checkedInToday
+                ? t("dashboard.recorded")
+                : t("dashboard.notRecorded")
+            }
+            subtitle={
+              stats.isLate ? t("attendance.late") : t("attendance.onTime")
+            }
             icon={Clock}
             color={stats.checkedInToday ? "emerald" : "amber"}
             onClick={() => onNavigate("attendance")}
           />
           <StatCard
-            title="مهامي المفتوحة"
+            title={t("dashboard.myOpenTasks")}
             value={stats.myOpenTasks}
-            subtitle={`${stats.myOverdueTasks} متأخرة`}
+            subtitle={`${stats.myOverdueTasks} ${t("dashboard.overdueTasks")}`}
             icon={CheckSquare}
             color="teal"
             onClick={() => onNavigate("tasks")}
           />
           <StatCard
-            title="تقرير اليوم"
-            value={stats.myTodayReport ? "مُقدَّم" : "معلّق"}
+            title={t("dashboard.todayReport")}
+            value={
+              stats.myTodayReport
+                ? t("dashboard.submitted")
+                : t("dashboard.pending")
+            }
             icon={FileText}
             color={stats.myTodayReport ? "emerald" : "amber"}
             onClick={() => onNavigate("reports")}
           />
           <StatCard
-            title="اجتماعاتي القادمة"
+            title={t("dashboard.myUpcomingMeetings")}
             value={stats.myUpcomingMeetings}
             icon={Calendar}
             color="blue"
@@ -155,7 +194,7 @@ export function Dashboard({ user, onNavigate }: Props) {
       )}
 
       <div className="grid lg:grid-cols-3 gap-6">
-        {/* Main column — Leaderboard or Recent Activity */}
+        {/* Main column */}
         <div className="lg:col-span-2 space-y-6">
           {/* Announcements */}
           {data.announcements && data.announcements.length > 0 && (
@@ -164,7 +203,7 @@ export function Dashboard({ user, onNavigate }: Props) {
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-lg flex items-center gap-2">
                     <Megaphone className="w-5 h-5 text-emerald-600" />
-                    أحدث الإعلانات
+                    {t("dashboard.recentAnnouncements")}
                   </CardTitle>
                   <Button
                     variant="ghost"
@@ -172,8 +211,8 @@ export function Dashboard({ user, onNavigate }: Props) {
                     className="text-emerald-700"
                     onClick={() => onNavigate("announcements")}
                   >
-                    عرض الكل
-                    <ArrowLeft className="w-3.5 h-3.5 mr-1" />
+                    {t("dashboard.viewAll")}
+                    <ArrowIcon className="w-3.5 h-3.5 mr-1" />
                   </Button>
                 </div>
               </CardHeader>
@@ -185,13 +224,15 @@ export function Dashboard({ user, onNavigate }: Props) {
                   >
                     <div className="flex items-center gap-2 mb-1">
                       {a.pinned && <Pin className="w-3 h-3 text-emerald-600" />}
-                      <h4 className="font-semibold text-sm text-emerald-900">{a.title}</h4>
+                      <h4 className="font-semibold text-sm text-emerald-900">
+                        {a.title}
+                      </h4>
                     </div>
-                    <p className="text-xs text-muted-foreground line-clamp-2 mb-1">
+                    <p className="text-xs text-muted-foreground line-clamp-2 mb-1 whitespace-pre-line">
                       {a.content}
                     </p>
                     <p className="text-xs text-emerald-600">
-                      {a.creator?.name} • {timeAgoArabic(a.createdAt)}
+                      {a.creator?.name} • {timeAgo(a.createdAt)}
                     </p>
                   </div>
                 ))}
@@ -206,7 +247,7 @@ export function Dashboard({ user, onNavigate }: Props) {
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-lg flex items-center gap-2">
                     <Trophy className="w-5 h-5 text-amber-500" />
-                    المتصدرون هذا الأسبوع
+                    {t("dashboard.weeklyLeaderboard")}
                   </CardTitle>
                   <Button
                     variant="ghost"
@@ -214,8 +255,8 @@ export function Dashboard({ user, onNavigate }: Props) {
                     className="text-amber-700"
                     onClick={() => onNavigate("leaderboard")}
                   >
-                    عرض الكل
-                    <ArrowLeft className="w-3.5 h-3.5 mr-1" />
+                    {t("dashboard.viewAll")}
+                    <ArrowIcon className="w-3.5 h-3.5 mr-1" />
                   </Button>
                 </div>
               </CardHeader>
@@ -241,13 +282,17 @@ export function Dashboard({ user, onNavigate }: Props) {
                       </div>
                       <Avatar className="w-9 h-9">
                         <AvatarFallback className="bg-gradient-to-br from-emerald-100 to-teal-100 text-emerald-700 text-xs">
-                          {m.name.split(" ").slice(0, 2).map((s: string) => s[0]).join("")}
+                          {m.name
+                            .split(" ")
+                            .slice(0, 2)
+                            .map((s: string) => s[0])
+                            .join("")}
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-sm truncate">{m.name}</p>
                         <p className="text-xs text-muted-foreground">
-                          {DEPARTMENT_LABELS[m.department] || m.department}
+                          {deptLabels[m.department] || m.department}
                         </p>
                       </div>
                       <span className="font-bold text-amber-600 text-sm">
@@ -267,7 +312,7 @@ export function Dashboard({ user, onNavigate }: Props) {
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-lg flex items-center gap-2">
                     <CheckSquare className="w-5 h-5 text-emerald-600" />
-                    مهامي الحالية
+                    {t("dashboard.myCurrentTasks")}
                   </CardTitle>
                   <Button
                     variant="ghost"
@@ -275,40 +320,42 @@ export function Dashboard({ user, onNavigate }: Props) {
                     className="text-emerald-700"
                     onClick={() => onNavigate("tasks")}
                   >
-                    عرض الكل
-                    <ArrowLeft className="w-3.5 h-3.5 mr-1" />
+                    {t("dashboard.viewAll")}
+                    <ArrowIcon className="w-3.5 h-3.5 mr-1" />
                   </Button>
                 </div>
               </CardHeader>
               <CardContent className="space-y-2">
-                {data.myTasks.slice(0, 5).map((t: any) => (
+                {data.myTasks.slice(0, 5).map((task: any) => (
                   <div
-                    key={t.id}
+                    key={task.id}
                     className="flex items-center justify-between p-2 rounded-lg hover:bg-emerald-50/50"
                   >
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm truncate">{t.title}</p>
+                      <p className="font-medium text-sm truncate">
+                        {task.title}
+                      </p>
                       <p className="text-xs text-muted-foreground">
-                        الموعد: {formatArabicDateTime(t.deadline)}
+                        {t("tasks.deadline")}: {formatDateTime(task.deadline)}
                       </p>
                     </div>
                     <Badge
                       variant="outline"
                       className={`mr-2 text-xs ${
-                        t.priority === "URGENT"
+                        task.priority === "URGENT"
                           ? "border-red-200 text-red-700 bg-red-50"
-                          : t.priority === "HIGH"
+                          : task.priority === "HIGH"
                           ? "border-amber-200 text-amber-700 bg-amber-50"
                           : "border-slate-200 text-slate-700"
                       }`}
                     >
-                      {t.priority === "URGENT"
-                        ? "عاجلة"
-                        : t.priority === "HIGH"
-                        ? "عالية"
-                        : t.priority === "MEDIUM"
-                        ? "متوسطة"
-                        : "منخفضة"}
+                      {task.priority === "URGENT"
+                        ? t("tasks.priority.urgent")
+                        : task.priority === "HIGH"
+                        ? t("tasks.priority.high")
+                        : task.priority === "MEDIUM"
+                        ? t("tasks.priority.medium")
+                        : t("tasks.priority.low")}
                     </Badge>
                   </div>
                 ))}
@@ -322,7 +369,7 @@ export function Dashboard({ user, onNavigate }: Props) {
               <CardHeader className="pb-3">
                 <CardTitle className="text-lg flex items-center gap-2">
                   <TrendingUp className="w-5 h-5 text-emerald-600" />
-                  النشاط الأخير
+                  {t("dashboard.recentActivity")}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
@@ -337,7 +384,9 @@ export function Dashboard({ user, onNavigate }: Props) {
                       </div>
                       <div>
                         <p className="text-sm font-medium">{a.user.name}</p>
-                        <p className="text-xs text-muted-foreground">{a.reason}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {a.reason}
+                        </p>
                       </div>
                     </div>
                     <div className="text-left">
@@ -345,7 +394,7 @@ export function Dashboard({ user, onNavigate }: Props) {
                         +{a.amount}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {timeAgoArabic(a.createdAt)}
+                        {timeAgo(a.createdAt)}
                       </p>
                     </div>
                   </div>
@@ -355,7 +404,7 @@ export function Dashboard({ user, onNavigate }: Props) {
           )}
         </div>
 
-        {/* Side column — Quick actions / Overdue alerts */}
+        {/* Side column */}
         <div className="space-y-6">
           {/* Overdue Alert */}
           {isTL && stats.overdueTasks > 0 && (
@@ -365,10 +414,12 @@ export function Dashboard({ user, onNavigate }: Props) {
                   <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" />
                   <div>
                     <p className="font-semibold text-sm text-red-900">
-                      {stats.overdueTasks} مهمة متأخرة
+                      {t("dashboard.overdueAlert", {
+                        count: stats.overdueTasks,
+                      })}
                     </p>
                     <p className="text-xs text-red-700 mt-1">
-                      يرجى مراجعة المهام المتأخرة وإعادة جدولتها أو إعادة تكليفها.
+                      {t("dashboard.overdueAlertDesc")}
                     </p>
                     <Button
                       variant="outline"
@@ -376,7 +427,7 @@ export function Dashboard({ user, onNavigate }: Props) {
                       className="mt-2 border-red-200 text-red-700 hover:bg-red-100"
                       onClick={() => onNavigate("tasks")}
                     >
-                      مراجعة المهام
+                      {t("dashboard.reviewTasks")}
                     </Button>
                   </div>
                 </div>
@@ -390,18 +441,22 @@ export function Dashboard({ user, onNavigate }: Props) {
               <div className="flex items-center justify-between mb-4">
                 <Trophy className="w-8 h-8" />
                 <Badge className="bg-white/20 text-white border-0">
-                  {ROLE_LABELS[user.role]}
+                  {roleLabels[user.role]}
                 </Badge>
               </div>
-              <p className="text-sm opacity-90">مجموع نقاطك</p>
+              <p className="text-sm opacity-90">{t("dashboard.totalPoints")}</p>
               <p className="text-4xl font-bold mt-1">{user.totalPoints}</p>
               <div className="grid grid-cols-2 gap-2 mt-4 pt-4 border-t border-white/20">
                 <div>
-                  <p className="text-xs opacity-75">هذا الأسبوع</p>
+                  <p className="text-xs opacity-75">
+                    {t("dashboard.thisWeek")}
+                  </p>
                   <p className="text-lg font-bold">{user.weeklyPoints}</p>
                 </div>
                 <div>
-                  <p className="text-xs opacity-75">هذا الشهر</p>
+                  <p className="text-xs opacity-75">
+                    {t("dashboard.thisMonth")}
+                  </p>
                   <p className="text-lg font-bold">{user.monthlyPoints}</p>
                 </div>
               </div>
@@ -411,7 +466,9 @@ export function Dashboard({ user, onNavigate }: Props) {
           {/* Quick Actions */}
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-base">إجراءات سريعة</CardTitle>
+              <CardTitle className="text-base">
+                {t("dashboard.quickActions")}
+              </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
               <Button
@@ -420,7 +477,7 @@ export function Dashboard({ user, onNavigate }: Props) {
                 onClick={() => onNavigate("attendance")}
               >
                 <Clock className="w-4 h-4 ml-2" />
-                تسجيل الحضور
+                {t("dashboard.checkIn")}
               </Button>
               <Button
                 variant="outline"
@@ -428,7 +485,7 @@ export function Dashboard({ user, onNavigate }: Props) {
                 onClick={() => onNavigate("reports")}
               >
                 <FileText className="w-4 h-4 ml-2" />
-                تقديم التقرير اليومي
+                {t("dashboard.submitReport")}
               </Button>
               <Button
                 variant="outline"
@@ -436,7 +493,7 @@ export function Dashboard({ user, onNavigate }: Props) {
                 onClick={() => onNavigate("tasks")}
               >
                 <CheckSquare className="w-4 h-4 ml-2" />
-                عرض مهامي
+                {t("dashboard.viewMyTasks")}
               </Button>
             </CardContent>
           </Card>
@@ -480,9 +537,7 @@ function StatCard({
         </div>
         <p className="text-2xl font-bold">{value}</p>
         <p className="text-xs opacity-80 mt-1">{title}</p>
-        {subtitle && (
-          <p className="text-xs opacity-70 mt-0.5">{subtitle}</p>
-        )}
+        {subtitle && <p className="text-xs opacity-70 mt-0.5">{subtitle}</p>}
       </CardContent>
     </Card>
   );

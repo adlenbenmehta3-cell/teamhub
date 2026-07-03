@@ -30,12 +30,17 @@ import {
   Clock,
   AlertTriangle,
   CalendarClock,
+  ExternalLink,
+  Folder,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useLanguage } from "@/components/language-provider";
 import {
   DEPARTMENT_LABELS,
   formatArabicDate,
+  formatEnglishDate,
   timeAgoArabic,
+  timeAgoEnglish,
 } from "@/lib/auth-labels";
 import type { User } from "@/app/page";
 
@@ -44,6 +49,7 @@ interface Props {
 }
 
 export function ReportsModule({ user }: Props) {
+  const { t, lang } = useLanguage();
   const [todayData, setTodayData] = useState<any>(null);
   const [history, setHistory] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -53,8 +59,11 @@ export function ReportsModule({ user }: Props) {
   // Form
   const [completed, setCompleted] = useState("");
   const [inProgress, setInProgress] = useState("");
-  const [blockers, setBlockers] = useState("لا يوجد");
+  const [blockers, setBlockers] = useState(
+    lang === "ar" ? "لا يوجد" : "None"
+  );
   const [tomorrow, setTomorrow] = useState("");
+  const [driveLink, setDriveLink] = useState("");
 
   useEffect(() => {
     loadData();
@@ -75,8 +84,9 @@ export function ReportsModule({ user }: Props) {
       if (today.myReport) {
         setCompleted(today.myReport.completed);
         setInProgress(today.myReport.inProgress);
-        setBlockers(today.myReport.blockers || "لا يوجد");
+        setBlockers(today.myReport.blockers || (lang === "ar" ? "لا يوجد" : "None"));
         setTomorrow(today.myReport.tomorrow || "");
+        setDriveLink(today.myReport.driveLink || "");
       }
     } finally {
       setLoading(false);
@@ -86,7 +96,7 @@ export function ReportsModule({ user }: Props) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!completed || !inProgress) {
-      toast.error("يرجى تعبئة الحقول المطلوبة");
+      toast.error(t("reports.fillRequired"));
       return;
     }
     try {
@@ -98,6 +108,7 @@ export function ReportsModule({ user }: Props) {
           inProgress,
           blockers,
           tomorrow,
+          driveLink,
         }),
       });
       const data = await res.json();
@@ -106,14 +117,14 @@ export function ReportsModule({ user }: Props) {
         return;
       }
       if (data.updated) {
-        toast.success("تم تحديث تقريرك");
+        toast.success(t("reports.updated"));
       } else {
-        toast.success(`تم تقديم التقرير • +${data.points} نقطة`);
+        toast.success(t("reports.submitted", { points: data.points }));
       }
       setSubmitOpen(false);
       loadData();
     } catch {
-      toast.error("فشل تقديم التقرير");
+      toast.error(t("reports.submitFailed"));
     }
   };
 
@@ -125,15 +136,19 @@ export function ReportsModule({ user }: Props) {
     );
   }
 
+  const todayDateStr = lang === "ar"
+    ? formatArabicDate(new Date())
+    : formatEnglishDate(new Date());
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl lg:text-3xl font-bold text-emerald-900">
-            التقارير اليومية
+            {t("reports.title")}
           </h1>
           <p className="text-muted-foreground mt-1">
-            {isTL ? "متابعة تقارير الفريق" : "قدّم تقريرك اليومي"}
+            {isTL ? t("reports.subtitle.leader") : t("reports.subtitle.member")}
           </p>
         </div>
 
@@ -142,76 +157,102 @@ export function ReportsModule({ user }: Props) {
             <DialogTrigger asChild>
               <Button className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700">
                 <Plus className="w-4 h-4 ml-2" />
-                {todayData?.myReport ? "تعديل التقرير" : "تقديم التقرير"}
+                {todayData?.myReport ? t("reports.edit") : t("reports.submit")}
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl">
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>
-                  التقرير اليومي — {formatArabicDate(new Date())}
+                  {t("reports.dialogTitle", { date: todayDateStr })}
                 </DialogTitle>
                 <DialogDescription>
-                  املأ الحقول التالية. الحقول المطلوبة: ما تم إنجازه وما قيد التقدم.
+                  {t("reports.dialogDesc")}
                 </DialogDescription>
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="completed">
-                    ما تم إنجازه اليوم *
+                    {t("reports.completed.label")} *
                   </Label>
                   <Textarea
                     id="completed"
                     value={completed}
                     onChange={(e) => setCompleted(e.target.value)}
-                    placeholder="مثال: أنهيت تقرير الأداء، أجريت اجتماعًا مع العميل، ..."
+                    placeholder={t("reports.completed.placeholder")}
                     rows={3}
                     required
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="inProgress">ما قيد التقدم *</Label>
+                  <Label htmlFor="inProgress">
+                    {t("reports.inProgress.label")} *
+                  </Label>
                   <Textarea
                     id="inProgress"
                     value={inProgress}
                     onChange={(e) => setInProgress(e.target.value)}
-                    placeholder="المهام التي تعمل عليها حاليًا ولم تكتمل بعد"
+                    placeholder={t("reports.inProgress.placeholder")}
                     rows={3}
                     required
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="blockers">العوائق / المساعدة المطلوبة</Label>
+                  <Label htmlFor="blockers">
+                    {t("reports.blockers.label")}
+                  </Label>
                   <Textarea
                     id="blockers"
                     value={blockers}
                     onChange={(e) => setBlockers(e.target.value)}
-                    placeholder="أي عوائق تواجهك أو مساعدة تحتاجها من الفريق"
+                    placeholder={t("reports.blockers.placeholder")}
                     rows={2}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="tomorrow">خطة الغد</Label>
+                  <Label htmlFor="tomorrow">
+                    {t("reports.tomorrow.label")}
+                  </Label>
                   <Textarea
                     id="tomorrow"
                     value={tomorrow}
                     onChange={(e) => setTomorrow(e.target.value)}
-                    placeholder="ما تخطط للعمل عليه غدًا"
+                    placeholder={t("reports.tomorrow.placeholder")}
                     rows={2}
                   />
                 </div>
+
+                {/* Google Drive Link */}
+                <div className="space-y-2 p-4 rounded-lg bg-emerald-50/50 border border-emerald-100">
+                  <Label htmlFor="driveLink" className="flex items-center gap-2">
+                    <Folder className="w-4 h-4 text-emerald-600" />
+                    {t("reports.driveLink.label")}
+                  </Label>
+                  <Input
+                    id="driveLink"
+                    type="url"
+                    dir="ltr"
+                    value={driveLink}
+                    onChange={(e) => setDriveLink(e.target.value)}
+                    placeholder={t("reports.driveLink.placeholder")}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    {t("reports.driveLink.hint")}
+                  </p>
+                </div>
+
                 <DialogFooter>
                   <Button
                     type="button"
                     variant="outline"
                     onClick={() => setSubmitOpen(false)}
                   >
-                    إلغاء
+                    {t("common.cancel")}
                   </Button>
                   <Button
                     type="submit"
                     className="bg-gradient-to-r from-emerald-600 to-teal-600"
                   >
-                    تقديم
+                    {t("reports.submitBtn")}
                   </Button>
                 </DialogFooter>
               </form>
@@ -235,25 +276,26 @@ export function ReportsModule({ user }: Props) {
                 <div className="flex items-center gap-2 mb-3">
                   <CheckCircle2 className="w-5 h-5 text-emerald-600" />
                   <p className="font-semibold text-emerald-900">
-                    لقد قدّمت تقرير اليوم
+                    {t("reports.reportSubmitted")}
                   </p>
                 </div>
                 <div className="space-y-3">
                   <ReportField
                     icon={<CheckCircle2 className="w-4 h-4" />}
-                    label="ما تم إنجازه"
+                    label={t("reports.fields.completed")}
                     value={todayData.myReport.completed}
                   />
                   <ReportField
                     icon={<Clock className="w-4 h-4" />}
-                    label="قيد التقدم"
+                    label={t("reports.fields.inProgress")}
                     value={todayData.myReport.inProgress}
                   />
                   {todayData.myReport.blockers &&
-                    todayData.myReport.blockers !== "لا يوجد" && (
+                    todayData.myReport.blockers !== "لا يوجد" &&
+                    todayData.myReport.blockers !== "None" && (
                       <ReportField
                         icon={<AlertTriangle className="w-4 h-4" />}
-                        label="العوائق"
+                        label={t("reports.fields.blockers")}
                         value={todayData.myReport.blockers}
                         warning
                       />
@@ -262,10 +304,31 @@ export function ReportsModule({ user }: Props) {
                     todayData.myReport.tomorrow !== "—" && (
                       <ReportField
                         icon={<CalendarClock className="w-4 h-4" />}
-                        label="خطة الغد"
+                        label={t("reports.fields.tomorrow")}
                         value={todayData.myReport.tomorrow}
                       />
                     )}
+                  {/* Drive Link */}
+                  {todayData.myReport.driveLink && (
+                    <div className="flex gap-2 p-3 rounded-lg bg-emerald-50 border border-emerald-100">
+                      <Folder className="w-4 h-4 text-emerald-600 mt-0.5" />
+                      <div className="flex-1">
+                        <p className="text-xs font-semibold text-muted-foreground mb-0.5">
+                          {t("reports.fields.driveLink")}
+                        </p>
+                        <a
+                          href={todayData.myReport.driveLink}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm text-emerald-700 hover:underline flex items-center gap-1"
+                          dir="ltr"
+                        >
+                          <ExternalLink className="w-3 h-3" />
+                          {t("reports.driveLink.view")}
+                        </a>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             ) : (
@@ -273,10 +336,10 @@ export function ReportsModule({ user }: Props) {
                 <AlertTriangle className="w-5 h-5 text-amber-600" />
                 <div>
                   <p className="font-semibold text-amber-900">
-                    لم تقدّم تقرير اليوم بعد
+                    {t("reports.notSubmittedYet")}
                   </p>
                   <p className="text-sm text-amber-700">
-                    اضغط "تقديم التقرير" لتسجيل إنجازاتك اليوم
+                    {t("reports.notSubmittedDesc")}
                   </p>
                 </div>
               </div>
@@ -289,13 +352,16 @@ export function ReportsModule({ user }: Props) {
       {isTL && todayData?.team && (
         <Card>
           <CardHeader>
-            <CardTitle>تقارير الفريق اليوم</CardTitle>
+            <CardTitle>{t("reports.teamToday")}</CardTitle>
             <CardDescription>
-              {todayData.submitted} من {todayData.total} قدّموا تقاريرهم
+              {t("reports.teamSummary", {
+                submitted: todayData.submitted,
+                total: todayData.total,
+              })}
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3 max-h-[600px] overflow-y-auto">
+            <div className="space-y-3 max-h-[700px] overflow-y-auto">
               {todayData.team.map((member: any) => (
                 <div
                   key={member.user.id}
@@ -329,14 +395,14 @@ export function ReportsModule({ user }: Props) {
                         className="border-emerald-200 text-emerald-700 bg-emerald-50"
                       >
                         <CheckCircle2 className="w-3 h-3 ml-1" />
-                        قدّم
+                        {t("reports.submitted")}
                       </Badge>
                     ) : (
                       <Badge
                         variant="outline"
                         className="border-amber-200 text-amber-700 bg-amber-50"
                       >
-                        معلّق
+                        {t("reports.pending")}
                       </Badge>
                     )}
                   </div>
@@ -344,7 +410,7 @@ export function ReportsModule({ user }: Props) {
                     <div className="space-y-2 text-sm">
                       <div>
                         <p className="text-xs font-semibold text-emerald-700 mb-0.5">
-                          أنجز:
+                          {t("reports.fields.completed")}:
                         </p>
                         <p className="text-muted-foreground">
                           {member.report.completed}
@@ -352,23 +418,43 @@ export function ReportsModule({ user }: Props) {
                       </div>
                       <div>
                         <p className="text-xs font-semibold text-teal-700 mb-0.5">
-                          قيد التقدم:
+                          {t("reports.fields.inProgress")}:
                         </p>
                         <p className="text-muted-foreground">
                           {member.report.inProgress}
                         </p>
                       </div>
                       {member.report.blockers &&
-                        member.report.blockers !== "لا يوجد" && (
+                        member.report.blockers !== "لا يوجد" &&
+                        member.report.blockers !== "None" && (
                           <div>
                             <p className="text-xs font-semibold text-amber-700 mb-0.5">
-                              عوائق:
+                              {t("reports.fields.blockers")}:
                             </p>
                             <p className="text-amber-900">
                               {member.report.blockers}
                             </p>
                           </div>
                         )}
+                      {/* Drive Link */}
+                      {member.report.driveLink && (
+                        <div className="pt-2 mt-2 border-t border-emerald-50">
+                          <p className="text-xs font-semibold text-emerald-700 mb-1 flex items-center gap-1">
+                            <Folder className="w-3 h-3" />
+                            {t("reports.fields.driveLink")}:
+                          </p>
+                          <a
+                            href={member.report.driveLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs text-emerald-700 hover:underline flex items-center gap-1"
+                            dir="ltr"
+                          >
+                            <ExternalLink className="w-3 h-3" />
+                            {t("reports.driveLink.view")}
+                          </a>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -382,12 +468,12 @@ export function ReportsModule({ user }: Props) {
       {!isTL && (
         <Card>
           <CardHeader>
-            <CardTitle>سجل التقارير — آخر 30 يوم</CardTitle>
+            <CardTitle>{t("reports.history")}</CardTitle>
           </CardHeader>
           <CardContent>
             {history.length === 0 ? (
               <p className="text-center text-muted-foreground py-8">
-                لا يوجد سجل تقارير بعد
+                {t("reports.noHistory")}
               </p>
             ) : (
               <div className="space-y-2 max-h-96 overflow-y-auto">
@@ -396,10 +482,25 @@ export function ReportsModule({ user }: Props) {
                     key={r.id}
                     className="p-3 rounded-lg border border-emerald-50 hover:bg-emerald-50/30"
                   >
-                    <p className="font-medium text-sm mb-1">
-                      {formatArabicDate(r.date)}
-                    </p>
-                    <p className="text-xs text-muted-foreground line-clamp-1">
+                    <div className="flex items-center justify-between">
+                      <p className="font-medium text-sm">
+                        {lang === "ar"
+                          ? formatArabicDate(r.date)
+                          : formatEnglishDate(r.date)}
+                      </p>
+                      {r.driveLink && (
+                        <a
+                          href={r.driveLink}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs text-emerald-600 hover:underline flex items-center gap-1"
+                        >
+                          <Folder className="w-3 h-3" />
+                          Drive
+                        </a>
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground line-clamp-1 mt-1">
                       {r.completed}
                     </p>
                   </div>
@@ -437,7 +538,11 @@ function ReportField({
         <p className="text-xs font-semibold text-muted-foreground mb-0.5">
           {label}
         </p>
-        <p className={`text-sm ${warning ? "text-amber-900" : "text-foreground"}`}>
+        <p
+          className={`text-sm whitespace-pre-line ${
+            warning ? "text-amber-900" : "text-foreground"
+          }`}
+        >
           {value}
         </p>
       </div>

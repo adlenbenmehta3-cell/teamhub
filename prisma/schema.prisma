@@ -149,6 +149,7 @@ model Report {
   inProgress  String
   blockers    String   @default("لا يوجد")
   tomorrow    String   @default("—")
+  driveLink   String?  // Google Drive link with the day's work
   createdAt   DateTime @default(now())
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 

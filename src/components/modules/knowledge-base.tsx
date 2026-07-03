@@ -41,9 +41,10 @@ import {
   HelpCircle,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useLanguage } from "@/components/language-provider";
 import {
-  KB_CATEGORY_LABELS,
   timeAgoArabic,
+  timeAgoEnglish,
 } from "@/lib/auth-labels";
 import type { User } from "@/app/page";
 
@@ -61,12 +62,12 @@ const CATEGORY_ICONS: Record<string, any> = {
 };
 
 export function KnowledgeBaseModule({ user }: Props) {
+  const { t, lang } = useLanguage();
   const [entries, setEntries] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all");
   const [createOpen, setCreateOpen] = useState(false);
 
-  // Form
   const [title, setTitle] = useState("");
   const [url, setUrl] = useState("");
   const [category, setCategory] = useState("PLAYBOOK");
@@ -75,6 +76,17 @@ export function KnowledgeBaseModule({ user }: Props) {
 
   const canManage =
     user.role === "TEAM_LEADER" || user.role === "SENIOR_MARKETER";
+
+  const categoryLabels: Record<string, string> = {
+    PLAYBOOK: t("kb.category.playbook"),
+    TEMPLATE: t("kb.category.template"),
+    BRAND_GUIDE: t("kb.category.brand_guide"),
+    TOOL_TUTORIAL: t("kb.category.tool_tutorial"),
+    CASE_STUDY: t("kb.category.case_study"),
+    FAQ: t("kb.category.faq"),
+  };
+
+  const timeAgo = lang === "ar" ? timeAgoArabic : timeAgoEnglish;
 
   useEffect(() => {
     loadEntries();
@@ -95,7 +107,7 @@ export function KnowledgeBaseModule({ user }: Props) {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title || !url || !category) {
-      toast.error("يرجى تعبئة الحقول المطلوبة");
+      toast.error(t("kb.fillRequired"));
       return;
     }
     try {
@@ -109,7 +121,7 @@ export function KnowledgeBaseModule({ user }: Props) {
         toast.error(data.error);
         return;
       }
-      toast.success("تمت إضافة المقال");
+      toast.success(t("kb.added"));
       setCreateOpen(false);
       setTitle("");
       setUrl("");
@@ -118,22 +130,22 @@ export function KnowledgeBaseModule({ user }: Props) {
       setTags("");
       loadEntries();
     } catch {
-      toast.error("فشل إضافة المقال");
+      toast.error(t("kb.addFailed"));
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("هل أنت متأكد من حذف هذا المقال؟")) return;
+    if (!confirm(t("kb.deleteConfirm"))) return;
     try {
       const res = await fetch(`/api/kb/${id}`, { method: "DELETE" });
       if (!res.ok) {
-        toast.error("فشل الحذف");
+        toast.error(t("kb.deleteFailed"));
         return;
       }
-      toast.success("تم حذف المقال");
+      toast.success(t("kb.deleted"));
       loadEntries();
     } catch {
-      toast.error("فشل الحذف");
+      toast.error(t("kb.deleteFailed"));
     }
   };
 
@@ -150,11 +162,9 @@ export function KnowledgeBaseModule({ user }: Props) {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl lg:text-3xl font-bold text-emerald-900">
-            قاعدة المعرفة
+            {t("kb.title")}
           </h1>
-          <p className="text-muted-foreground mt-1">
-            أدلة، قوالب، شروحات، ودراسات حالة
-          </p>
+          <p className="text-muted-foreground mt-1">{t("kb.subtitle")}</p>
         </div>
 
         {canManage && (
@@ -162,70 +172,82 @@ export function KnowledgeBaseModule({ user }: Props) {
             <DialogTrigger asChild>
               <Button className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700">
                 <Plus className="w-4 h-4 ml-2" />
-                مقال جديد
+                {t("kb.new")}
               </Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>إضافة مقال لقاعدة المعرفة</DialogTitle>
-                <DialogDescription>شارك معرفتك مع الفريق</DialogDescription>
+                <DialogTitle>{t("kb.createTitle")}</DialogTitle>
+                <DialogDescription>{t("kb.createDesc")}</DialogDescription>
               </DialogHeader>
               <form onSubmit={handleCreate} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="title">العنوان *</Label>
+                  <Label htmlFor="title">{t("kb.title.label")} *</Label>
                   <Input
                     id="title"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
-                    placeholder="مثال: دليل إنشاء حملة على فيسبوك"
+                    placeholder={t("kb.title.placeholder")}
                     required
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="url">الرابط *</Label>
+                  <Label htmlFor="url">{t("kb.url.label")} *</Label>
                   <Input
                     id="url"
                     type="url"
                     dir="ltr"
                     value={url}
                     onChange={(e) => setUrl(e.target.value)}
-                    placeholder="https://..."
+                    placeholder={t("kb.url.placeholder")}
                     required
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="category">الفئة *</Label>
+                  <Label htmlFor="category">{t("kb.category.label")} *</Label>
                   <Select value={category} onValueChange={setCategory}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="PLAYBOOK">دليل إجرائي</SelectItem>
-                      <SelectItem value="TEMPLATE">قالب</SelectItem>
-                      <SelectItem value="BRAND_GUIDE">دليل العلامة</SelectItem>
-                      <SelectItem value="TOOL_TUTORIAL">شرح أداة</SelectItem>
-                      <SelectItem value="CASE_STUDY">دراسة حالة</SelectItem>
-                      <SelectItem value="FAQ">أسئلة شائعة</SelectItem>
+                      <SelectItem value="PLAYBOOK">
+                        {t("kb.category.playbook")}
+                      </SelectItem>
+                      <SelectItem value="TEMPLATE">
+                        {t("kb.category.template")}
+                      </SelectItem>
+                      <SelectItem value="BRAND_GUIDE">
+                        {t("kb.category.brand_guide")}
+                      </SelectItem>
+                      <SelectItem value="TOOL_TUTORIAL">
+                        {t("kb.category.tool_tutorial")}
+                      </SelectItem>
+                      <SelectItem value="CASE_STUDY">
+                        {t("kb.category.case_study")}
+                      </SelectItem>
+                      <SelectItem value="FAQ">
+                        {t("kb.category.faq")}
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="summary">ملخص</Label>
+                  <Label htmlFor="summary">{t("kb.summary.label")}</Label>
                   <Textarea
                     id="summary"
                     value={summary}
                     onChange={(e) => setSummary(e.target.value)}
-                    placeholder="وصف مختصر للمقال..."
+                    placeholder={t("kb.summary.placeholder")}
                     rows={3}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="tags">الوسوم (مفصولة بفواصل)</Label>
+                  <Label htmlFor="tags">{t("kb.tags.label")}</Label>
                   <Input
                     id="tags"
                     value={tags}
                     onChange={(e) => setTags(e.target.value)}
-                    placeholder="facebook, ads, marketing"
+                    placeholder={t("kb.tags.placeholder")}
                     dir="ltr"
                   />
                 </div>
@@ -235,13 +257,13 @@ export function KnowledgeBaseModule({ user }: Props) {
                     variant="outline"
                     onClick={() => setCreateOpen(false)}
                   >
-                    إلغاء
+                    {t("common.cancel")}
                   </Button>
                   <Button
                     type="submit"
                     className="bg-gradient-to-r from-emerald-600 to-teal-600"
                   >
-                    إضافة
+                    {t("kb.add")}
                   </Button>
                 </DialogFooter>
               </form>
@@ -262,9 +284,9 @@ export function KnowledgeBaseModule({ user }: Props) {
               : "border-emerald-200 text-emerald-700"
           }
         >
-          الكل ({entries.length})
+          {t("kb.all")} ({entries.length})
         </Button>
-        {Object.entries(KB_CATEGORY_LABELS).map(([key, label]) => {
+        {Object.entries(categoryLabels).map(([key, label]) => {
           const count = entries.filter((e) => e.category === key).length;
           return (
             <Button
@@ -284,15 +306,16 @@ export function KnowledgeBaseModule({ user }: Props) {
         })}
       </div>
 
-      {/* Entries */}
       {entries.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center">
             <BookOpen className="w-12 h-12 text-muted-foreground/30 mx-auto mb-3" />
             <p className="text-muted-foreground">
               {filter === "all"
-                ? "لا توجد مقالات بعد"
-                : `لا توجد مقالات في فئة "${KB_CATEGORY_LABELS[filter]}"`}
+                ? t("kb.noEntries")
+                : t("kb.noEntriesFiltered", {
+                    category: categoryLabels[filter] || filter,
+                  })}
             </p>
           </CardContent>
         </Card>
@@ -318,7 +341,7 @@ export function KnowledgeBaseModule({ user }: Props) {
                             variant="outline"
                             className="border-emerald-200 text-emerald-700 bg-emerald-50 text-xs"
                           >
-                            {KB_CATEGORY_LABELS[entry.category]}
+                            {categoryLabels[entry.category]}
                           </Badge>
                         </div>
                         <h3 className="font-semibold text-emerald-900 mb-1">
@@ -338,10 +361,10 @@ export function KnowledgeBaseModule({ user }: Props) {
                             dir="ltr"
                           >
                             <ExternalLink className="w-3 h-3" />
-                            فتح الرابط
+                            {t("kb.openLink")}
                           </a>
                           <span className="text-xs text-muted-foreground">
-                            {entry.creator?.name} • {timeAgoArabic(entry.createdAt)}
+                            {entry.creator?.name} • {timeAgo(entry.createdAt)}
                           </span>
                         </div>
                         {canManage && (
@@ -351,7 +374,7 @@ export function KnowledgeBaseModule({ user }: Props) {
                             className="mt-2 text-red-600 hover:bg-red-50 text-xs h-7"
                             onClick={() => handleDelete(entry.id)}
                           >
-                            حذف
+                            {t("kb.delete")}
                           </Button>
                         )}
                       </div>
