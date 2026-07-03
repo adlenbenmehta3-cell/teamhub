@@ -24,7 +24,7 @@ interface Props {
 
 export function LoginScreen({ onLogin }: Props) {
   const { t, lang } = useLanguage();
-  const [email, setEmail] = useState("admin@team.com");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -154,16 +154,6 @@ export function LoginScreen({ onLogin }: Props) {
             </form>
           </CardContent>
         </Card>
-
-        {/* Admin credentials hint */}
-        <div className="mt-4 p-3 rounded-md bg-muted/50 border border-border text-center">
-          <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
-            {lang === "ar" ? "بيانات دخول الأدمن" : "Admin credentials"}
-          </p>
-          <p className="text-xs text-foreground mt-1.5 font-mono" dir="ltr">
-            admin@team.com / adlene123
-          </p>
-        </div>
 
         <p className="mt-6 text-center text-xs text-muted-foreground">
           {t("login.copyright")}
