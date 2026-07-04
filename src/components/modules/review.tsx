@@ -20,7 +20,6 @@ import {
 import {
   ClipboardCheck,
   FileText,
-  ClipboardList,
   CheckSquare,
   ExternalLink,
   Folder,
@@ -62,16 +61,6 @@ interface WorkerTask {
   isOverdue: boolean;
 }
 
-interface WorkerWorkPlanItem {
-  id: string;
-  title: string;
-  description: string | null;
-  workPlanTitle: string;
-  completed: boolean;
-  driveLink: string | null;
-  completedAt: string | null;
-}
-
 interface WorkerReport {
   id: string;
   completed: string;
@@ -88,15 +77,12 @@ interface WorkerData {
   title: string | null;
   department: string;
   tasks: WorkerTask[];
-  workPlanItems: WorkerWorkPlanItem[];
   report: WorkerReport | null;
   summary: {
     totalTasks: number;
     completedTasks: number;
     uncompletedTasks: number;
     overdueTasks: number;
-    totalWorkPlanItems: number;
-    completedWorkPlanItems: number;
     hasReport: boolean;
     hasDriveLinks: boolean;
   };
@@ -145,7 +131,6 @@ export function ReviewModule({ user }: Props) {
           .filter(
             (w: WorkerData) =>
               w.summary.totalTasks > 0 ||
-              w.summary.totalWorkPlanItems > 0 ||
               w.summary.hasReport
           )
           .map((w: WorkerData) => w.id)
@@ -222,7 +207,6 @@ export function ReviewModule({ user }: Props) {
   const activeWorkers = data.workers.filter(
     (w) =>
       w.summary.totalTasks > 0 ||
-      w.summary.totalWorkPlanItems > 0 ||
       w.summary.hasReport
   );
 
@@ -386,10 +370,7 @@ function WorkerCard({
   const hasOverdue = worker.summary.overdueTasks > 0;
   const allCompleted =
     worker.summary.totalTasks > 0 &&
-    worker.summary.uncompletedTasks === 0 &&
-    (worker.summary.totalWorkPlanItems === 0 ||
-      worker.summary.completedWorkPlanItems ===
-        worker.summary.totalWorkPlanItems);
+    worker.summary.uncompletedTasks === 0;
 
   return (
     <Card
@@ -448,15 +429,7 @@ function WorkerCard({
                       {lang === "ar" ? "متأخرة" : "overdue"}
                     </span>
                   )}
-                  {/* Work plan progress */}
-                  {worker.summary.totalWorkPlanItems > 0 && (
-                    <span className="flex items-center gap-1">
-                      <ClipboardList className="w-3 h-3" />
-                      {worker.summary.completedWorkPlanItems}/
-                      {worker.summary.totalWorkPlanItems}{" "}
-                      {lang === "ar" ? "قائمة" : "checklist"}
-                    </span>
-                  )}
+
                   {/* Report */}
                   {worker.summary.hasReport ? (
                     <span className="flex items-center gap-1 text-primary">
@@ -533,31 +506,6 @@ function WorkerCard({
               </div>
             )}
 
-            {/* Work Plan Checklist Section */}
-            {worker.workPlanItems.length > 0 && (
-              <div>
-                <h4 className="text-sm font-semibold mb-2 flex items-center gap-1.5">
-                  <ClipboardList className="w-4 h-4 text-primary" />
-                  {lang === "ar" ? "قائمة المهام اليومية" : "Daily Checklist"}
-                  <Badge variant="outline" className="text-xs ml-1">
-                    {worker.summary.completedWorkPlanItems}/
-                    {worker.summary.totalWorkPlanItems}
-                  </Badge>
-                </h4>
-                <div className="space-y-2">
-                  {worker.workPlanItems.map((item) => (
-                    <ChecklistRow
-                      key={item.id}
-                      item={item}
-                      t={t}
-                      lang={lang}
-                      formatTime={formatTime}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
-
             {/* Daily Report Section */}
             {worker.report ? (
               <div>
@@ -610,8 +558,7 @@ function WorkerCard({
                 </div>
               </div>
             ) : (
-              worker.summary.totalTasks === 0 &&
-              worker.summary.totalWorkPlanItems === 0 && (
+              worker.summary.totalTasks === 0 && (
                 <p className="text-sm text-muted-foreground text-center py-4">
                   {lang === "ar"
                     ? "لا يوجد نشاط لهذا العامل في هذا التاريخ."
@@ -727,69 +674,6 @@ function TaskRow({
   );
 }
 
+
 // ============================================================
-// Checklist Row Component
-// ============================================================
 
-function ChecklistRow({
-  item,
-  t,
-  lang,
-  formatTime,
-}: {
-  item: WorkerWorkPlanItem;
-  t: (key: string, vars?: any) => string;
-  lang: string;
-  formatTime: (date: string | Date) => string;
-}) {
-  return (
-    <div
-      className={`p-3 rounded-md border ${
-        item.completed
-          ? "border-primary/20 bg-primary/5"
-          : "border-border"
-      }`}
-    >
-      <div className="flex items-start gap-2">
-        {item.completed ? (
-          <CheckCircle2 className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
-        ) : (
-          <Circle className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
-        )}
-
-        <div className="flex-1 min-w-0">
-          <p
-            className={`text-sm font-medium ${
-              item.completed ? "line-through text-muted-foreground" : ""
-            }`}
-          >
-            {item.title}
-          </p>
-          {item.description && (
-            <p className="text-xs text-muted-foreground line-clamp-1">
-              {item.description}
-            </p>
-          )}
-          <p className="text-xs text-muted-foreground mt-0.5">
-            {item.workPlanTitle}
-            {item.completedAt && ` • ${formatTime(item.completedAt)}`}
-          </p>
-
-          {item.driveLink && (
-            <a
-              href={item.driveLink}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 text-xs text-primary hover:underline mt-1"
-              dir="ltr"
-            >
-              <Folder className="w-3 h-3" />
-              {t("review.viewWork")}
-              <ExternalLink className="w-3 h-3" />
-            </a>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
