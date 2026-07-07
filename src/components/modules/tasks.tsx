@@ -51,6 +51,7 @@ import {
   Folder,
   ExternalLink,
   Trash2,
+  Calendar,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useLanguage } from "@/components/language-provider";
@@ -102,6 +103,16 @@ export function TasksModule({ user }: Props) {
   const [rAssigneeId, setRAssigneeId] = useState("");
   const [rRequiresDriveLink, setRRequiresDriveLink] = useState(true);
 
+  // Weekly task form
+  const [weeklyTasks, setWeeklyTasks] = useState<any[]>([]);
+  const [createWeeklyOpen, setCreateWeeklyOpen] = useState(false);
+  const [wTitle, setWTitle] = useState("");
+  const [wDescription, setWDescription] = useState("");
+  const [wPriority, setWPriority] = useState("MEDIUM");
+  const [wDayOfWeek, setWDayOfWeek] = useState("1"); // 1=Monday
+  const [wAssigneeId, setWAssigneeId] = useState("");
+  const [wRequiresDriveLink, setWRequiresDriveLink] = useState(true);
+
   const priorityLabels: Record<string, string> = {
     LOW: t("tasks.priority.low"),
     MEDIUM: t("tasks.priority.medium"),
@@ -124,8 +135,23 @@ export function TasksModule({ user }: Props) {
   useEffect(() => {
     loadTasks();
     loadRecurringTasks();
+    loadWeeklyTasks();
     if (isTL) loadTeam();
   }, [filter, activeTab]);
+
+  const loadWeeklyTasks = async () => {
+    try {
+      const res = await fetch("/api/recurring-tasks");
+      const data = await res.json();
+      // Filter only WEEKLY pattern
+      const weekly = (data.recurringTasks || []).filter(
+        (rt: any) => rt.pattern === "WEEKLY"
+      );
+      setWeeklyTasks(weekly);
+    } catch {
+      // ignore
+    }
+  };
 
   const loadTasks = async () => {
     try {
@@ -323,6 +349,76 @@ export function TasksModule({ user }: Props) {
     }
   };
 
+  const handleCreateWeekly = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!wTitle || !wDescription) {
+      toast.error(t("tasks.recurringFillRequired"));
+      return;
+    }
+    try {
+      // Calculate start date (today) and end date (6 months from now)
+      const startDate = new Date();
+      const endDate = new Date();
+      endDate.setMonth(endDate.getMonth() + 6);
+
+      const res = await fetch("/api/recurring-tasks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: wTitle,
+          description: wDescription,
+          priority: wPriority,
+          pattern: "WEEKLY",
+          startDate: startDate.toISOString(),
+          endDate: endDate.toISOString(),
+          assigneeId: wAssigneeId || undefined,
+          requiresDriveLink: wRequiresDriveLink,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error);
+        return;
+      }
+      toast.success(
+        lang === "ar"
+          ? "تم إنشاء المهمة الأسبوعية بنجاح"
+          : "Weekly task created successfully"
+      );
+      setCreateWeeklyOpen(false);
+      setWTitle("");
+      setWDescription("");
+      setWPriority("MEDIUM");
+      setWDayOfWeek("1");
+      setWAssigneeId("");
+      setWRequiresDriveLink(true);
+      loadWeeklyTasks();
+    } catch {
+      toast.error(t("tasks.recurringCreateFailed"));
+    }
+  };
+
+  const handleDeleteWeekly = async (id: string) => {
+    if (
+      !confirm(
+        lang === "ar"
+          ? "حذف هذه المهمة الأسبوعية؟ سيتم حذف كل النسخ المستقبلية."
+          : "Delete this weekly task? All future instances will be deleted."
+      )
+    )
+      return;
+    try {
+      // Delete all future instances first
+      await fetch(`/api/recurring-tasks/${id}`, { method: "DELETE" });
+      toast.success(
+        lang === "ar" ? "تم الحذف" : "Deleted"
+      );
+      loadWeeklyTasks();
+    } catch {
+      toast.error("Failed");
+    }
+  };
+
   const handleStopRecurring = async (id: string) => {
     if (!confirm(t("tasks.recurringStopConfirm"))) return;
     try {
@@ -415,6 +511,11 @@ export function TasksModule({ user }: Props) {
           {isTL && (
             <TabsTrigger value="recurring">
               {t("tasks.recurringTab")}
+            </TabsTrigger>
+          )}
+          {isTL && (
+            <TabsTrigger value="weekly">
+              {lang === "ar" ? "المهام الأسبوعية" : "Weekly Tasks"}
             </TabsTrigger>
           )}
         </TabsList>
@@ -740,6 +841,98 @@ export function TasksModule({ user }: Props) {
             </div>
           )}
         </TabsContent>
+
+        {/* ===================== WEEKLY TASKS TAB (admin only) ===================== */}
+        {isTL && (
+          <TabsContent value="weekly" className="space-y-4">
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-muted-foreground">
+                {lang === "ar"
+                  ? "مهام تتكرر كل أسبوع — تُنشأ نسخة كل يوم اثنين تلقائياً"
+                  : "Tasks that repeat every week — a new instance is generated every Monday"}
+              </p>
+              <Button
+                onClick={() => setCreateWeeklyOpen(true)}
+                className="bg-primary text-primary-foreground hover:bg-primary/90"
+              >
+                <Plus className="w-4 h-4 ml-2" />
+                {lang === "ar" ? "مهمة أسبوعية جديدة" : "New Weekly Task"}
+              </Button>
+            </div>
+
+            {weeklyTasks.length === 0 ? (
+              <Card>
+                <CardContent className="py-12 text-center">
+                  <Calendar className="w-12 h-12 text-muted-foreground/30 mx-auto mb-3" />
+                  <p className="text-muted-foreground">
+                    {lang === "ar"
+                      ? "لا توجد مهام أسبوعية نشطة"
+                      : "No active weekly tasks"}
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-3">
+                {weeklyTasks.map((wt) => (
+                  <Card key={wt.id}>
+                    <CardContent className="pt-4">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-2 flex-wrap">
+                            <Badge variant="outline" className="border-primary/30 text-primary bg-primary/5">
+                              <Calendar className="w-3 h-3 ml-1" />
+                              {lang === "ar" ? "أسبوعي" : "Weekly"}
+                            </Badge>
+                            <Badge variant="outline" className={PRIORITY_COLORS[wt.priority]}>
+                              {priorityLabels[wt.priority]}
+                            </Badge>
+                            <Badge variant="outline" className="border-border">
+                              <CalendarDays className="w-3 h-3 ml-1" />
+                              {wt._count?.tasks || 0} {lang === "ar" ? "نسخة" : "instances"}
+                            </Badge>
+                          </div>
+                          <h3 className="font-semibold mb-1">{wt.title}</h3>
+                          <p className="text-sm text-muted-foreground mb-2 line-clamp-2 whitespace-pre-line">
+                            {wt.description}
+                          </p>
+                          <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
+                            <span>
+                              {lang === "ar" ? "من:" : "From:"} {formatDate(wt.startDate)}
+                            </span>
+                            <span>
+                              {lang === "ar" ? "إلى:" : "To:"} {formatDate(wt.endDate)}
+                            </span>
+                            {wt.assignee && (
+                              <span>
+                                {lang === "ar" ? "المكلف:" : "Assignee:"}{" "}
+                                <strong>{wt.assignee.name}</strong>
+                              </span>
+                            )}
+                            {wt.requiresDriveLink && (
+                              <Badge variant="outline" className="text-xs border-primary/20 text-primary">
+                                <Folder className="w-2.5 h-2.5 ml-1" />
+                                {lang === "ar" ? "إلزامي Drive" : "Drive required"}
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="border-destructive/30 text-destructive hover:bg-destructive/5"
+                          onClick={() => handleDeleteWeekly(wt.id)}
+                        >
+                          <Trash2 className="w-3.5 h-3.5 ml-1" />
+                          {t("workplans.delete")}
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+        )}
       </Tabs>
 
       {/* ===================== CREATE ONE-TIME TASK DIALOG ===================== */}
@@ -857,6 +1050,120 @@ export function TasksModule({ user }: Props) {
               </Button>
               <Button type="submit" className="bg-primary text-primary-foreground hover:bg-primary/90">
                 {t("tasks.create")}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* ===================== CREATE WEEKLY TASK DIALOG ===================== */}
+      <Dialog open={createWeeklyOpen} onOpenChange={setCreateWeeklyOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Calendar className="w-5 h-5 text-primary" />
+              {lang === "ar" ? "مهمة أسبوعية جديدة" : "New Weekly Task"}
+            </DialogTitle>
+            <DialogDescription>
+              {lang === "ar"
+                ? "ستُنشأ نسخة من هذه المهمة تلقائياً كل يوم اثنين لمدة 6 أشهر."
+                : "A new instance of this task will be generated every Monday for 6 months."}
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleCreateWeekly} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="wTitle">
+                {t("tasks.title.label")} *
+              </Label>
+              <Input
+                id="wTitle"
+                value={wTitle}
+                onChange={(e) => setWTitle(e.target.value)}
+                placeholder={t("tasks.title.placeholder")}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="wDescription">
+                {t("tasks.description.label")} *
+              </Label>
+              <Textarea
+                id="wDescription"
+                value={wDescription}
+                onChange={(e) => setWDescription(e.target.value)}
+                placeholder={t("tasks.description.placeholder")}
+                rows={3}
+                required
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label htmlFor="wPriority">
+                  {t("tasks.priority.label")}
+                </Label>
+                <Select value={wPriority} onValueChange={setWPriority}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="LOW">{t("tasks.priority.low")}</SelectItem>
+                    <SelectItem value="MEDIUM">{t("tasks.priority.medium")}</SelectItem>
+                    <SelectItem value="HIGH">{t("tasks.priority.high")}</SelectItem>
+                    <SelectItem value="URGENT">{t("tasks.priority.urgent")}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="wAssignee">
+                  {t("tasks.assignee.label")}
+                </Label>
+                <Select value={wAssigneeId} onValueChange={setWAssigneeId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder={t("tasks.assignee.placeholder")} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {team.map((m) => (
+                      <SelectItem key={m.id} value={m.id}>
+                        {m.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Requires Drive Link toggle */}
+            <div className="flex items-center justify-between p-3 rounded-md border border-border">
+              <div>
+                <Label className="text-sm font-medium cursor-pointer">
+                  {lang === "ar" ? "إلزامي رابط Google Drive" : "Require Google Drive Link"}
+                </Label>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {lang === "ar"
+                    ? "إذا مفعّل، يجب على العامل وضع رابط Drive قبل إتمام المهمة"
+                    : "If on, worker must add a Drive link before completing"}
+                </p>
+              </div>
+              <Switch
+                checked={wRequiresDriveLink}
+                onCheckedChange={setWRequiresDriveLink}
+              />
+            </div>
+
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setCreateWeeklyOpen(false)}
+              >
+                {t("common.cancel")}
+              </Button>
+              <Button
+                type="submit"
+                className="bg-primary text-primary-foreground hover:bg-primary/90"
+              >
+                <Calendar className="w-4 h-4 ml-2" />
+                {lang === "ar" ? "إنشاء" : "Create"}
               </Button>
             </DialogFooter>
           </form>
