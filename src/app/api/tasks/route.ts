@@ -31,6 +31,10 @@ export async function GET(req: NextRequest) {
     if (assigneeId) {
       where.assigneeId = assigneeId;
     }
+    // Workers only see tasks assigned to them; admins see all
+    if (!isTeamLeader(user.role)) {
+      where.assigneeId = user.id;
+    }
     // Filter: show tasks due today or earlier (uncompleted)
     // Workers see: today's tasks + any overdue uncompleted tasks
     // Future tasks are NOT shown until their day arrives
