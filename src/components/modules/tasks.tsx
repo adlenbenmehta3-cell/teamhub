@@ -1230,7 +1230,11 @@ export function TasksModule({ user }: Props) {
               >
                 {t("common.cancel")}
               </Button>
-              <Button type="submit" className="bg-primary text-primary-foreground hover:bg-primary/90">
+              <Button
+                type="button"
+                className="bg-primary text-primary-foreground hover:bg-primary/90"
+                onClick={handleCreate}
+              >
                 {t("tasks.create")}
               </Button>
             </DialogFooter>
