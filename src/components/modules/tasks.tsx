@@ -52,6 +52,7 @@ import {
   ExternalLink,
   Trash2,
   Calendar,
+  Pencil,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useLanguage } from "@/components/language-provider";
@@ -112,6 +113,15 @@ export function TasksModule({ user }: Props) {
   const [wDayOfWeek, setWDayOfWeek] = useState("1"); // 1=Monday
   const [wAssigneeId, setWAssigneeId] = useState("");
   const [wRequiresDriveLink, setWRequiresDriveLink] = useState(true);
+
+  // Edit task
+  const [editTask, setEditTask] = useState<any | null>(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [editDescription, setEditDescription] = useState("");
+  const [editDeadline, setEditDeadline] = useState("");
+  const [editPriority, setEditPriority] = useState("MEDIUM");
+  const [editAssigneeId, setEditAssigneeId] = useState("");
+  const [editRequiresDriveLink, setEditRequiresDriveLink] = useState(true);
 
   const priorityLabels: Record<string, string> = {
     LOW: t("tasks.priority.low"),
@@ -325,6 +335,57 @@ export function TasksModule({ user }: Props) {
       loadTasks();
     } catch {
       toast.error(t("tasks.reassignFailed"));
+    }
+  };
+
+  const openEdit = (task: any) => {
+    setEditTask(task);
+    setEditTitle(task.title);
+    setEditDescription(task.description);
+    // Convert deadline to datetime-local format
+    const dl = new Date(task.deadline);
+    const offset = dl.getTimezoneOffset();
+    const local = new Date(dl.getTime() - offset * 60000);
+    setEditDeadline(local.toISOString().slice(0, 16));
+    setEditPriority(task.priority);
+    setEditAssigneeId(task.assigneeId || "");
+    setEditRequiresDriveLink(task.requiresDriveLink ?? true);
+  };
+
+  const handleEditSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editTask) return;
+    if (!editTitle || !editDescription || !editDeadline) {
+      toast.error(t("tasks.fillRequired"));
+      return;
+    }
+    try {
+      const res = await fetch(`/api/tasks/${editTask.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: editTitle,
+          description: editDescription,
+          deadline: new Date(editDeadline).toISOString(),
+          priority: editPriority,
+          assigneeId: editAssigneeId || null,
+          requiresDriveLink: editRequiresDriveLink,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error);
+        return;
+      }
+      toast.success(
+        lang === "ar" ? "تم تعديل المهمة بنجاح" : "Task updated successfully"
+      );
+      setEditTask(null);
+      loadTasks();
+    } catch {
+      toast.error(
+        lang === "ar" ? "فشل تعديل المهمة" : "Failed to update task"
+      );
     }
   };
 
@@ -725,6 +786,14 @@ export function TasksModule({ user }: Props) {
                               <Button
                                 size="sm"
                                 variant="outline"
+                                className="h-8 px-2 border-border text-primary hover:bg-accent"
+                                onClick={() => openEdit(task)}
+                              >
+                                <Pencil className="w-3.5 h-3.5" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
                                 className="h-8 px-2 border-destructive/30 text-destructive hover:bg-destructive/5"
                                 onClick={() => handleDeleteTask(task.id, task.title, !!task.recurringTaskId)}
                               >
@@ -934,6 +1003,119 @@ export function TasksModule({ user }: Props) {
           </TabsContent>
         )}
       </Tabs>
+
+      {/* ===================== EDIT TASK DIALOG ===================== */}
+      <Dialog open={!!editTask} onOpenChange={(o) => !o && setEditTask(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Pencil className="w-5 h-5 text-primary" />
+              {lang === "ar" ? "تعديل المهمة" : "Edit Task"}
+            </DialogTitle>
+            <DialogDescription>
+              {lang === "ar"
+                ? "عدّل تفاصيل المهمة ثم احفظ التغييرات"
+                : "Edit task details then save changes"}
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleEditSave} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="editTitle">{t("tasks.title.label")} *</Label>
+              <Input
+                id="editTitle"
+                value={editTitle}
+                onChange={(e) => setEditTitle(e.target.value)}
+                placeholder={t("tasks.title.placeholder")}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="editDescription">{t("tasks.description.label")} *</Label>
+              <Textarea
+                id="editDescription"
+                value={editDescription}
+                onChange={(e) => setEditDescription(e.target.value)}
+                placeholder={t("tasks.description.placeholder")}
+                rows={4}
+                required
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label htmlFor="editDeadline">{t("tasks.deadline.label")} *</Label>
+                <Input
+                  id="editDeadline"
+                  type="datetime-local"
+                  value={editDeadline}
+                  onChange={(e) => setEditDeadline(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="editPriority">{t("tasks.priority.label")}</Label>
+                <Select value={editPriority} onValueChange={setEditPriority}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="LOW">{t("tasks.priority.low")}</SelectItem>
+                    <SelectItem value="MEDIUM">{t("tasks.priority.medium")}</SelectItem>
+                    <SelectItem value="HIGH">{t("tasks.priority.high")}</SelectItem>
+                    <SelectItem value="URGENT">{t("tasks.priority.urgent")}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="editAssignee">{t("tasks.assignee.label")}</Label>
+              <Select value={editAssigneeId} onValueChange={setEditAssigneeId}>
+                <SelectTrigger>
+                  <SelectValue placeholder={t("tasks.assignee.placeholder")} />
+                </SelectTrigger>
+                <SelectContent>
+                  {team.map((m) => (
+                    <SelectItem key={m.id} value={m.id}>
+                      {m.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-center justify-between p-3 rounded-md border border-border">
+              <div>
+                <Label className="text-sm font-medium cursor-pointer">
+                  {lang === "ar" ? "إلزامي رابط Google Drive" : "Require Google Drive Link"}
+                </Label>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {lang === "ar"
+                    ? "إذا مفعّل، يجب على العامل وضع رابط Drive قبل إتمام المهمة"
+                    : "If on, worker must add a Drive link before completing"}
+                </p>
+              </div>
+              <Switch
+                checked={editRequiresDriveLink}
+                onCheckedChange={setEditRequiresDriveLink}
+              />
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setEditTask(null)}
+              >
+                {t("common.cancel")}
+              </Button>
+              <Button
+                type="submit"
+                className="bg-primary text-primary-foreground hover:bg-primary/90"
+              >
+                <Pencil className="w-4 h-4 ml-2" />
+                {lang === "ar" ? "حفظ التعديلات" : "Save Changes"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       {/* ===================== CREATE ONE-TIME TASK DIALOG ===================== */}
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>

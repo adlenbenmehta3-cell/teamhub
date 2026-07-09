@@ -154,6 +154,71 @@ export async function PATCH(
 }
 
 // ============================================================
+// PUT /api/tasks/[id] — Edit task details (Team Leader only)
+// Body: { title?, description?, deadline?, priority?, assigneeId?, requiresDriveLink? }
+// ============================================================
+
+export async function PUT(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const user = await getCurrentUser();
+    if (!user || !isTeamLeader(user.role)) {
+      return NextResponse.json(
+        { error: "فقط قائد الفريق يمكنه تعديل المهام" },
+        { status: 403 }
+      );
+    }
+
+    const { id } = await params;
+    const task = await db.task.findUnique({ where: { id } });
+    if (!task) {
+      return NextResponse.json(
+        { error: "المهمة غير موجودة" },
+        { status: 404 }
+      );
+    }
+
+    const body = await req.json();
+    const data: any = {};
+
+    if (body.title !== undefined) data.title = body.title;
+    if (body.description !== undefined) data.description = body.description;
+    if (body.priority !== undefined) data.priority = body.priority;
+    if (body.assigneeId !== undefined) data.assigneeId = body.assigneeId || null;
+    if (body.requiresDriveLink !== undefined) data.requiresDriveLink = body.requiresDriveLink;
+    if (body.deadline !== undefined) {
+      try {
+        data.deadline = new Date(body.deadline);
+      } catch {
+        return NextResponse.json(
+          { error: "تاريخ غير صالح" },
+          { status: 400 }
+        );
+      }
+    }
+
+    const updated = await db.task.update({
+      where: { id },
+      data,
+      include: {
+        assignee: { select: { id: true, name: true, department: true } },
+        creator: { select: { id: true, name: true } },
+      },
+    });
+
+    return NextResponse.json({ success: true, task: updated });
+  } catch (e) {
+    console.error("Task PUT error:", e);
+    return NextResponse.json(
+      { error: "حدث خطأ أثناء تعديل المهمة" },
+      { status: 500 }
+    );
+  }
+}
+
+// ============================================================
 // DELETE /api/tasks/[id] — Delete a task (Team Leader only)
 // ============================================================
 
