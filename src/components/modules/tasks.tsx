@@ -195,6 +195,21 @@ export function TasksModule({ user }: Props) {
     setTeam(data.members || []);
   };
 
+  // Description expansion state
+  const [expandedTasks, setExpandedTasks] = useState<Set<string>>(new Set());
+
+  const toggleExpand = (taskId: string) => {
+    setExpandedTasks((prev) => {
+      const next = new Set(prev);
+      if (next.has(taskId)) {
+        next.delete(taskId);
+      } else {
+        next.add(taskId);
+      }
+      return next;
+    });
+  };
+
   const resetForm = () => {
     setTitle("");
     setDescription("");
@@ -286,8 +301,8 @@ export function TasksModule({ user }: Props) {
     }
   };
 
-  const handleComplete = async (taskId: string, driveLink: string) => {
-    if (!driveLink.trim()) {
+  const handleComplete = async (taskId: string, driveLink: string, requiresDrive: boolean = true) => {
+    if (requiresDrive && !driveLink.trim()) {
       toast.error(
         lang === "ar"
           ? "يجب إضافة رابط Google Drive قبل إتمام المهمة"
@@ -299,7 +314,7 @@ export function TasksModule({ user }: Props) {
       const res = await fetch(`/api/tasks/${taskId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "complete", driveLink }),
+        body: JSON.stringify({ action: "complete", driveLink: driveLink || undefined }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -650,7 +665,7 @@ export function TasksModule({ user }: Props) {
                             } else if (isAssignee || isTL) {
                               if (isTL || !task.requiresDriveLink) {
                                 // Admin OR task doesn't require Drive link → complete directly
-                                handleComplete(task.id, taskDriveLink || (task.requiresDriveLink ? "admin" : ""));
+                                handleComplete(task.id, taskDriveLink || "", task.requiresDriveLink);
                               } else {
                                 // Worker on a Drive-link-required task → show Drive input
                                 setCompletingTaskId(task.id);
@@ -695,9 +710,19 @@ export function TasksModule({ user }: Props) {
                           <h3 className={`font-semibold mb-1 ${isCompleted ? "line-through text-muted-foreground" : ""}`}>
                             {task.title}
                           </h3>
-                          <p className="text-sm text-muted-foreground mb-2 line-clamp-2 whitespace-pre-line">
+                          <p className={`text-sm text-muted-foreground mb-2 whitespace-pre-line ${expandedTasks.has(task.id) ? "" : "line-clamp-2"}`}>
                             {task.description}
                           </p>
+                          {task.description && task.description.length > 100 && (
+                            <button
+                              onClick={() => toggleExpand(task.id)}
+                              className="text-xs text-primary hover:underline mb-2"
+                            >
+                              {expandedTasks.has(task.id)
+                                ? (lang === "ar" ? "عرض أقل" : "Show less")
+                                : (lang === "ar" ? "عرض المزيد" : "See more")}
+                            </button>
+                          )}
 
                           {/* Meta info */}
                           <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap mb-2">
@@ -736,7 +761,7 @@ export function TasksModule({ user }: Props) {
                                 <Button
                                   size="sm"
                                   className="bg-primary text-primary-foreground hover:bg-primary/90 h-9 flex-shrink-0"
-                                  onClick={() => handleComplete(task.id, taskDriveLink)}
+                                  onClick={() => handleComplete(task.id, taskDriveLink, task.requiresDriveLink)}
                                 >
                                   <Check className="w-3.5 h-3.5 ml-1" />
                                   {t("tasks.complete")}
